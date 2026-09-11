@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "nexoravm",
+  "productName": "NexoraVM",
   "version": "0.1.0",
   "identifier": "com.nexoravm.desktop",
   "build": {
@@ -12,9 +12,11 @@
   "app": {
     "windows": [
       {
-        "title": "nexoravm",
-        "width": 800,
-        "height": 600
+        "title": "NexoraVM",
+        "width": 1180,
+        "height": 760,
+        "minWidth": 820,
+        "minHeight": 560
       }
     ],
     "security": {

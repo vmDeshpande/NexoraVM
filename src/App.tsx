@@ -1,50 +1,69 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
+import { useEffect, useState } from "react";
+import { AppShell } from "./layouts/AppShell";
+import { DashboardPage } from "./pages/DashboardPage";
+import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { getPageMeta } from "./lib/navigation";
+import { useRuntimeSnapshot } from "./hooks/useRuntimeSnapshot";
+import { placeholderRuntimeSnapshot } from "./features/dashboard/placeholderRuntime";
+import type { NavigationView } from "./types/navigation";
+import type { RuntimeSnapshot } from "./types/runtime";
 import "./App.css";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+const placeholderDescriptions: Record<NavigationView, string> = {
+  dashboard: "Review runtime health and next setup steps.",
+  "virtual-machines": "Virtual machine creation and lifecycle controls are coming soon.",
+  "ai-workspace": "Provider-neutral AI configuration and inference are coming soon.",
+  storage: "Storage locations and disk management are coming soon.",
+  settings: "Application preferences and runtime settings are coming soon.",
+};
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+function getRuntimeSnapshot(state: {
+  error: string | null;
+  snapshot: RuntimeSnapshot | null;
+}) {
+  if (state.snapshot) {
+    return state.snapshot;
   }
 
+  return {
+    ...placeholderRuntimeSnapshot,
+    runtime: {
+      ...placeholderRuntimeSnapshot.runtime,
+      detail: state.error ?? placeholderRuntimeSnapshot.runtime.detail,
+      label: state.error ? "Unavailable" : placeholderRuntimeSnapshot.runtime.label,
+      state: state.error ? "error" : placeholderRuntimeSnapshot.runtime.state,
+    },
+  } satisfies RuntimeSnapshot;
+}
+
+function App() {
+  const [activeView, setActiveView] = useState<NavigationView>("dashboard");
+  const runtimeState = useRuntimeSnapshot();
+  const snapshot = getRuntimeSnapshot(runtimeState);
+  const page = getPageMeta(activeView);
+
+  useEffect(() => {
+    document.title = `NexoraVM — ${page.title}`;
+  }, [page.title]);
+
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
+    <AppShell
+      activeView={activeView}
+      onNavigate={setActiveView}
+      page={page}
+      runtime={snapshot.runtime}
+    >
+      {activeView === "dashboard" ? (
+        <DashboardPage onNavigate={setActiveView} snapshot={snapshot} />
+      ) : (
+        <PlaceholderPage
+          description={placeholderDescriptions[activeView]}
+          onNavigate={setActiveView}
+          returnView="dashboard"
+          title={`${page.title} is coming soon`}
         />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+      )}
+    </AppShell>
   );
 }
 
