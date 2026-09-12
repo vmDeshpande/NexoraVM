@@ -35,6 +35,15 @@
 - [x] Add the Virtual Machines management flow
 - [ ] Connect lifecycle actions to QEMU/WHPX
 
+## Phase 4 — Runtime Discovery and Diagnostics
+
+- [x] Discover configured, standard-location, and PATH-based QEMU executables
+- [x] Report controlled QEMU version diagnostics
+- [x] Add typed WHPX and Windows virtualization capability states
+- [x] Add Dashboard and Settings runtime diagnostics panels
+- [ ] Improve host capability detection without elevation
+- [ ] Construct controlled QEMU commands
+
 ## Phase 3 — Guest Interaction
 
 - [ ] Display guest screen

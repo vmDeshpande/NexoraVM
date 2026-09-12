@@ -3,6 +3,7 @@ import { Button } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
 import { StatCard } from "../components/StatCard";
 import { StatusBadge } from "../components/StatusBadge";
+import { RuntimeDiagnostics } from "../components/RuntimeDiagnostics";
 import type { NavigationView } from "../types/navigation";
 import type { RuntimeSnapshot } from "../types/runtime";
 import { vmService } from "../lib/vmService";
@@ -90,6 +91,8 @@ export function DashboardPage({ onNavigate, snapshot }: DashboardPageProps) {
           value="Not configured"
         />
       </div>
+
+      <RuntimeDiagnostics />
 
       <div className="dashboard__lower-grid">
         <section className="panel dashboard__activity">

@@ -3,7 +3,7 @@ pub mod settings;
 pub mod vm_config;
 pub mod vm_definitions;
 
-use runtime_adapter::{start_vm, stop_vm};
+use runtime_adapter::{get_runtime_status, refresh_runtime_status, start_vm, stop_vm};
 use settings::{get_app_settings, reset_app_settings, save_app_settings};
 use vm_definitions::{
     create_vm_definition, delete_vm_definition, get_vm_definition, list_vm_definitions,
@@ -24,7 +24,9 @@ pub fn run() {
             update_vm_definition,
             delete_vm_definition,
             start_vm,
-            stop_vm
+            stop_vm,
+            get_runtime_status,
+            refresh_runtime_status
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

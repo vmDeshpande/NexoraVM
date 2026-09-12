@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "../components/Button";
+import { RuntimeDiagnostics } from "../components/RuntimeDiagnostics";
 import {
   getCommandErrorMessage,
   settingsService,
@@ -214,6 +215,8 @@ export function SettingsPage() {
           />
         </div>
       </section>
+
+      <RuntimeDiagnostics compact />
 
       {(error || feedback) && (
         <div

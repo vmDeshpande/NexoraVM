@@ -26,6 +26,8 @@ Implemented:
 - A Virtual Machines management page with typed create/edit forms and deletion confirmation.
 - Separate persisted VM status values, defaulting new definitions to `stopped`.
 - Dashboard VM totals derived from persisted definitions.
+- Safe runtime discovery diagnostics for configured or standard QEMU installations.
+- Typed QEMU version, WHPX, and Windows virtualization capability diagnostics.
 
 Not implemented yet:
 
@@ -58,6 +60,12 @@ This milestone prepares the project for QEMU integration by establishing typed s
 Virtual machine definitions are persisted as JSON in the same operating-system application-data directory used for settings, in `vm-definitions.json`. Definitions can be created, edited, listed, looked up, and deleted from the Virtual Machines page. New definitions receive generated stable UUID-based identifiers and start with a `stopped` status.
 
 Start and Stop controls are intentionally unavailable because QEMU/WHPX execution, process management, and real lifecycle state are planned for a later milestone. The current status model is ready for that runtime boundary without claiming that a VM is running.
+
+## Runtime Diagnostics
+
+The Dashboard and Settings pages can refresh runtime diagnostics. Discovery checks the configured QEMU path first, then bounded standard installation locations and PATH entries. A candidate must be a regular file before NexoraVM invokes it with the fixed `--version` argument; no shell commands or arbitrary arguments are used. Missing QEMU produces an unavailable status and a diagnostic message rather than an application failure.
+
+WHPX and CPU virtualization diagnostics are currently reported as unknown on Windows because reliable detection is not yet implemented, and unsupported on non-Windows platforms. NexoraVM does not enable Windows features, request administrator privileges, or start QEMU in this milestone.
 
 ## Technology Stack
 
@@ -168,10 +176,11 @@ The current code implements the desktop shell, settings and VM-definition persis
 
 ## Planned Next Steps
 
-1. Add host capability detection for Windows virtualization prerequisites.
-2. Implement QEMU/WHPX lifecycle operations behind the runtime adapter.
-3. Add VM metadata, disk provisioning, and runtime state events.
-4. Add AI provider configuration and model selection without coupling it to VM orchestration.
+1. Improve Windows host capability detection without elevation.
+2. Add controlled QEMU command construction behind the runtime adapter.
+3. Implement QEMU/WHPX lifecycle operations behind the runtime adapter.
+4. Add VM metadata, disk provisioning, and runtime state events.
+5. Add AI provider configuration and model selection without coupling it to VM orchestration.
 
 ## License
 
