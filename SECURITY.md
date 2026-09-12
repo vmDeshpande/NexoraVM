@@ -1,6 +1,6 @@
 # Security Policy
 
-NexoraVM handles virtualization configuration and will eventually manage host processes. These are security-sensitive operations. The project is intentionally deferring real QEMU execution until command construction, validation, process policy, and testing are ready.
+NexoraVM handles virtualization configuration and controlled host processes. These are security-sensitive operations. QEMU launch is limited to validated command specifications; complete VM runtime integration remains deferred.
 
 ## Current Security Boundaries
 
@@ -19,7 +19,7 @@ NexoraVM handles virtualization configuration and will eventually manage host pr
 
 Relevant risks include command injection, unsafe path composition, malformed persisted data, excessive host access, untrusted guest behavior, privilege escalation, dependency compromise, and future AI actions that exceed user intent.
 
-Future QEMU process management must address typed command construction, process isolation, least privilege, output and resource limits, timeouts, cancellation, cleanup, and truthful runtime-state updates. Future AI tools must use explicit capabilities, policy checks, user approval for destructive actions, auditability, and recovery behavior.
+QEMU process management now uses direct process APIs, separate executable/argument fields, bounded output buffers, duplicate-start protection, stop timeouts, forced termination fallback, and in-memory handles. It still requires deeper process isolation, cancellation policy, cleanup review, and truthful guest-state integration before it is considered complete runtime support. Future AI tools must use explicit capabilities, policy checks, user approval for destructive actions, auditability, and recovery behavior.
 
 The current command-construction layer is intentionally preview-only. It validates configuration, rejects shell-like VM names and unsafe paths, rejects unsupported bridged networking, and never starts QEMU or creates disks.
 

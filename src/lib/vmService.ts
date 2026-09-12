@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import type { VmConfiguration, VmDefinition } from "../types/vmConfig";
-import type { QemuCommandSpec } from "../types/runtimeStatus";
+import type { QemuCommandSpec, QemuProcessStatus } from "../types/runtimeStatus";
 
 export interface VmService {
   listVmDefinitions: () => Promise<VmDefinition[]>;
@@ -8,8 +8,9 @@ export interface VmService {
   createVmDefinition: (configuration: VmConfiguration) => Promise<VmDefinition>;
   updateVmDefinition: (configuration: VmConfiguration) => Promise<VmDefinition>;
   deleteVmDefinition: (vmId: string) => Promise<void>;
-  startVm: (vmId: string) => Promise<void>;
-  stopVm: (vmId: string) => Promise<void>;
+  startVm: (vmId: string) => Promise<QemuProcessStatus>;
+  stopVm: (vmId: string) => Promise<QemuProcessStatus>;
+  getVmProcessStatus: (vmId: string) => Promise<QemuProcessStatus>;
   buildQemuCommandSpec: (vmId: string) => Promise<QemuCommandSpec>;
 }
 
@@ -21,8 +22,10 @@ export const vmService: VmService = {
   updateVmDefinition: (configuration) =>
     invoke<VmDefinition>("update_vm_definition", { configuration }),
   deleteVmDefinition: (vmId) => invoke<void>("delete_vm_definition", { vmId }),
-  startVm: (vmId) => invoke<void>("start_vm", { vmId }),
-  stopVm: (vmId) => invoke<void>("stop_vm", { vmId }),
+  startVm: (vmId) => invoke<QemuProcessStatus>("start_vm", { vmId }),
+  stopVm: (vmId) => invoke<QemuProcessStatus>("stop_vm", { vmId }),
+  getVmProcessStatus: (vmId) =>
+    invoke<QemuProcessStatus>("get_vm_process_status", { vmId }),
   buildQemuCommandSpec: (vmId) =>
     invoke<QemuCommandSpec>("build_qemu_command_spec", { vmId }),
 };

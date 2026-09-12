@@ -10,7 +10,11 @@ import type {
   VmDefinition,
 } from "../types/vmConfig";
 import type { DisplayMode } from "../types/settings";
-import type { QemuCommandSpec } from "../types/runtimeStatus";
+import type {
+  QemuCommandSpec,
+  QemuProcessState,
+  QemuProcessStatus,
+} from "../types/runtimeStatus";
 
 const defaultConfiguration: VmConfiguration = {
   id: "",
@@ -52,11 +56,30 @@ export function VirtualMachinesPage() {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [preview, setPreview] = useState<QemuCommandSpec | null>(null);
   const [previewingId, setPreviewingId] = useState<string | null>(null);
+  const [processStatuses, setProcessStatuses] = useState<
+    Record<string, QemuProcessStatus>
+  >({});
+  const [processActionId, setProcessActionId] = useState<string | null>(null);
 
   const loadDefinitions = async () => {
     try {
       const loadedDefinitions = await vmService.listVmDefinitions();
       setDefinitions(loadedDefinitions);
+      const statusEntries = await Promise.all(
+        loadedDefinitions.map(async (definition) => {
+          try {
+            return [
+              definition.configuration.id,
+              await vmService.getVmProcessStatus(definition.configuration.id),
+            ] as const;
+          } catch {
+            return null;
+          }
+        }),
+      );
+      setProcessStatuses(
+        Object.fromEntries(statusEntries.filter((entry): entry is readonly [string, QemuProcessStatus] => entry !== null)),
+      );
       setError(null);
     } catch (loadError) {
       setError(getCommandErrorMessage(loadError));
@@ -143,7 +166,45 @@ export function VirtualMachinesPage() {
     }
   };
 
-  const controlsDisabled = loading || saving || deletingId !== null;
+  const startProcess = async (vmId: string) => {
+    setProcessActionId(vmId);
+    setError(null);
+    try {
+      const status = await vmService.startVm(vmId);
+      setProcessStatuses((current) => ({ ...current, [vmId]: status }));
+    } catch (startError) {
+      setError(getCommandErrorMessage(startError));
+      await refreshProcessStatus(vmId);
+    } finally {
+      setProcessActionId(null);
+    }
+  };
+
+  const stopProcess = async (vmId: string) => {
+    setProcessActionId(vmId);
+    setError(null);
+    try {
+      const status = await vmService.stopVm(vmId);
+      setProcessStatuses((current) => ({ ...current, [vmId]: status }));
+    } catch (stopError) {
+      setError(getCommandErrorMessage(stopError));
+      await refreshProcessStatus(vmId);
+    } finally {
+      setProcessActionId(null);
+    }
+  };
+
+  const refreshProcessStatus = async (vmId: string) => {
+    try {
+      const status = await vmService.getVmProcessStatus(vmId);
+      setProcessStatuses((current) => ({ ...current, [vmId]: status }));
+    } catch {
+      // The original command error remains the user-facing diagnostic.
+    }
+  };
+
+  const controlsDisabled =
+    loading || saving || deletingId !== null || processActionId !== null;
 
   return (
     <div className="virtual-machines-page">
@@ -208,6 +269,19 @@ export function VirtualMachinesPage() {
               onEdit={() => openEditForm(definition)}
               onPreview={() => void previewCommand(definition.configuration.id)}
               previewing={previewingId === definition.configuration.id}
+              processStatus={
+                processStatuses[definition.configuration.id] ?? {
+                  vmId: definition.configuration.id,
+                  state: "stopped",
+                  processId: null,
+                  exitCode: null,
+                  terminationReason: null,
+                  output: { stdout: "", stderr: "", truncated: false },
+                }
+              }
+              onStart={() => void startProcess(definition.configuration.id)}
+              onStop={() => void stopProcess(definition.configuration.id)}
+              processAction={processActionId === definition.configuration.id}
             />
           ))}
         </div>
@@ -436,6 +510,10 @@ interface VmCardProps {
   onEdit: () => void;
   onPreview: () => void;
   previewing: boolean;
+  onStart: () => void;
+  onStop: () => void;
+  processAction: boolean;
+  processStatus: QemuProcessStatus;
 }
 
 function VmCard({
@@ -446,6 +524,10 @@ function VmCard({
   onEdit,
   onPreview,
   previewing,
+  onStart,
+  onStop,
+  processAction,
+  processStatus,
 }: VmCardProps) {
   const { configuration } = definition;
   return (
@@ -455,8 +537,8 @@ function VmCard({
           <p className="section-kicker">{formatLabel(configuration.operatingSystem)}</p>
           <h2>{configuration.name}</h2>
         </div>
-        <span className={`vm-status vm-status--${definition.status}`}>
-          {formatLabel(definition.status)}
+        <span className={`vm-status vm-status--${processStatus.state}`}>
+          {formatLabel(processStatus.state)}
         </span>
       </div>
       <dl className="vm-card__details">
@@ -481,11 +563,19 @@ function VmCard({
         {configuration.isoPath ? `ISO: ${configuration.isoPath}` : "No ISO selected"}
       </p>
       <div className="vm-card__actions">
-        <Button disabled variant="ghost" title="Runtime integration is not implemented yet.">
-          Start
+        <Button
+          disabled={disabled || processAction || !canStart(processStatus.state)}
+          onClick={onStart}
+          variant="ghost"
+        >
+          {processAction && processStatus.state === "starting" ? "Starting" : "Start"}
         </Button>
-        <Button disabled variant="ghost" title="Runtime integration is not implemented yet.">
-          Stop
+        <Button
+          disabled={disabled || processAction || !canStop(processStatus.state)}
+          onClick={onStop}
+          variant="ghost"
+        >
+          {processAction && processStatus.state === "stopping" ? "Stopping" : "Stop"}
         </Button>
         <span className="vm-card__action-spacer" />
         <Button disabled={disabled} onClick={onEdit}>
@@ -554,4 +644,12 @@ function CommandPreview({ spec }: CommandPreviewProps) {
       ) : null}
     </section>
   );
+}
+
+function canStart(state: QemuProcessState) {
+  return state === "stopped" || state === "not-started" || state === "failed";
+}
+
+function canStop(state: QemuProcessState) {
+  return state === "starting" || state === "running";
 }

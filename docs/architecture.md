@@ -47,7 +47,7 @@ Rust owns validation, persistence, structured command errors, runtime discovery,
 
 QEMU is the planned runtime backend. Current code only checks bounded candidate paths and invokes a validated executable with the fixed `--version` argument. WHPX and CPU virtualization states are reported as `unknown` on Windows until reliable detection is implemented. No Windows features are enabled automatically.
 
-The command-construction layer now produces a typed `QemuCommandSpec` with a `PathBuf` executable and ordered argument vector. It is a diagnostic preview boundary, not process management. The builder maps only supported display and network modes, uses TCG when WHPX is not confirmed available, and rejects unsupported bridged networking. No shell command string or arbitrary QEMU flags are accepted.
+The command-construction layer produces a typed `QemuCommandSpec` with a `PathBuf` executable and ordered argument vector. The process manager accepts only that validated specification. It maps supported display and network modes, uses TCG when WHPX is not confirmed available, rejects unsupported bridged networking, and launches directly without shell command strings or arbitrary QEMU flags.
 
 ### Future AI runtime
 
@@ -70,7 +70,7 @@ The AI workspace is intended to sit behind provider-neutral model and capability
 5. Rust returns typed data or a structured error.
 6. The page updates its loading, success, or error state.
 
-For command preview, a VM ID is resolved to a persisted definition, runtime diagnostics are refreshed, and the Rust builder returns structured executable/argument data. No process is launched.
+For command preview, a VM ID is resolved to a persisted definition, runtime diagnostics are refreshed, and the Rust builder returns structured executable/argument data. For Start, the same path is passed to the in-memory process manager; live handles never enter persisted JSON.
 
 ## Error Handling
 
@@ -78,6 +78,6 @@ Commands return structured errors with a code, user-facing message, and optional
 
 ## Security Boundaries
 
-The frontend does not execute host commands directly. Runtime discovery does not use a shell, does not accept arbitrary argument lists, does not scan the entire filesystem, and does not request administrator privileges. Future QEMU process management must preserve these boundaries and add typed command construction before any VM process is started.
+The frontend does not execute host commands directly. Runtime discovery and process management do not use a shell, do not accept arbitrary argument lists, do not scan the entire filesystem, and do not request administrator privileges. The process manager accepts only builder-produced specifications and bounds captured output.
 
 The separation between VM configuration and runtime state prevents stored intent from being mistaken for actual execution state. The provider-neutral adapter also leaves room for another runtime without coupling the UI to QEMU command syntax.

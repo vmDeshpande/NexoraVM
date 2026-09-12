@@ -330,16 +330,6 @@ fn current_timestamp() -> String {
 }
 
 #[tauri::command]
-pub fn start_vm(vm_id: String) -> Result<(), CommandError> {
-    QemuRuntimeAdapter.start_vm(&vm_id)
-}
-
-#[tauri::command]
-pub fn stop_vm(vm_id: String) -> Result<(), CommandError> {
-    QemuRuntimeAdapter.stop_vm(&vm_id)
-}
-
-#[tauri::command]
 pub fn build_qemu_command_spec(
     app: AppHandle,
     vm_id: String,

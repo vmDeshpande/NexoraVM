@@ -74,7 +74,7 @@ This is the canonical NexoraVM roadmap. A checked item means the repository cont
 
 **Completion criteria:** a command specification can be reviewed and tested without spawning QEMU. This milestone is complete.
 
-## Phase 6 — Controlled QEMU Process Management — Planned
+## Phase 6 — Controlled QEMU Process Management — Completed
 
 **Objective:** manage a validated QEMU process through a narrow lifecycle abstraction.
 
@@ -84,9 +84,9 @@ This is the canonical NexoraVM roadmap. A checked item means the repository cont
 
 **Security considerations:** least privilege, bounded resources, output handling, cancellation, and safe cleanup.
 
-**Completion criteria:** process behavior is covered by focused tests and cannot receive arbitrary UI command input.
+**Completion criteria:** process behavior is covered by focused tests, accepts only validated command specifications, uses direct process APIs, bounds output, and cannot receive arbitrary UI command input. This milestone is complete.
 
-## Phase 7 — VM Runtime Integration — Planned
+## Phase 7 — VM Runtime Integration — Current next milestone
 
 **Objective:** connect persisted definitions to real runtime state.
 

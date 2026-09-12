@@ -41,6 +41,39 @@ pub struct QemuCommandSpec {
     pub network_mode: QemuNetworkMode,
 }
 
+pub fn validate_qemu_command_spec(spec: &QemuCommandSpec) -> Result<(), CommandError> {
+    if spec.executable_path.as_os_str().is_empty() || !spec.executable_path.is_file() {
+        return Err(CommandError::validation(
+            "executablePath",
+            "Executable path must refer to a regular file.",
+        ));
+    }
+    if spec.arguments.is_empty() {
+        return Err(CommandError::validation(
+            "arguments",
+            "QEMU command arguments cannot be empty.",
+        ));
+    }
+    if spec.vm_id.trim().is_empty() {
+        return Err(CommandError::validation("vmId", "VM id is required."));
+    }
+    if spec.arguments.iter().any(|argument| {
+        argument
+            .chars()
+            .any(|character| character == '\0' || character.is_control())
+            || matches!(
+                argument.as_str(),
+                "cmd.exe" | "powershell" | "pwsh" | "sh" | "-c"
+            )
+    }) {
+        return Err(CommandError::validation(
+            "arguments",
+            "QEMU arguments contain unsupported process or control input.",
+        ));
+    }
+    Ok(())
+}
+
 pub fn build_qemu_command_spec(
     config: &VmConfiguration,
     status: &RuntimeStatus,

@@ -8,7 +8,7 @@ NexoraVM is an early-stage desktop application for defining virtual machines, di
 
 NexoraVM is in active early development. The desktop shell, persistent application settings, typed VM configuration, persistent VM definitions, VM management UI, and safe QEMU discovery diagnostics are implemented. Real VM execution is not implemented yet.
 
-The current application does not start or stop QEMU, create virtual disks, integrate WHPX execution, manage guest networking, run AI models, or provide a production-ready installer. See [current status](docs/current-status.md) for the exact implementation boundary.
+The current application can launch only a validated QEMU command specification when QEMU is detected. It does not create virtual disks, integrate WHPX execution, manage guest networking, run AI models, or provide a production-ready installer. See [current status](docs/current-status.md) for the exact implementation boundary.
 
 ## Feature Status
 
@@ -22,9 +22,9 @@ The current application does not start or stop QEMU, create virtual disks, integ
 | Runtime discovery | Implemented | Bounded configured-path, standard-location, and PATH lookup. |
 | QEMU detection | Partial | Regular-file validation and fixed `--version` probing; no VM launch. |
 | QEMU command preview | Implemented | Deterministic typed specification only; preview never executes QEMU. |
-| QEMU execution | Not implemented | Controlled command construction must precede process execution. |
+| QEMU execution | Partial | Controlled validated process launch only; no complete guest runtime integration. |
 | WHPX integration | Planned | Current Windows capability fields report `unknown`; no WHPX execution exists. |
-| VM lifecycle | Not implemented | Start/Stop commands are explicit placeholders. |
+| VM lifecycle | Partial | In-memory process start/stop/status exists; persisted VM state remains configuration-only. |
 | Storage management | Planned | Storage preferences exist; disk creation and management do not. |
 | AI workspace | Planned | Navigation placeholder only. |
 | AI model integration | Not implemented | No local or cloud inference provider exists. |
@@ -122,8 +122,8 @@ Settings include optional QEMU, VM storage, and ISO paths; default memory and CP
 
 ## Current Limitations
 
-- No actual QEMU process execution.
-- No real VM startup, shutdown, pause, or lifecycle synchronization.
+- No complete VM runtime integration or guest lifecycle synchronization.
+- QEMU process management is limited to validated command specifications and in-memory process state.
 - No WHPX execution integration or reliable Windows virtualization detection.
 - No virtual disk creation or storage management.
 - No complete network management.
@@ -132,7 +132,7 @@ Settings include optional QEMU, VM storage, and ISO paths; default memory and CP
 - No snapshot and restore workflow.
 - No production installer or release guarantee yet.
 
-Runtime discovery does not claim that QEMU or WHPX is usable unless the configured or boundedly discovered executable passes the fixed version check. Windows WHPX and CPU virtualization fields currently report `unknown`.
+Runtime discovery does not claim that QEMU or WHPX is usable unless the configured or boundedly discovered executable passes the fixed version check. Windows WHPX and CPU virtualization fields currently report `unknown`. Start requests fail clearly when QEMU is unavailable.
 
 ## Roadmap
 

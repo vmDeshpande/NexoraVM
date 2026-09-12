@@ -44,3 +44,36 @@ export interface QemuCommandSpec {
   displayMode: QemuDisplayMode;
   networkMode: QemuNetworkMode;
 }
+
+export type QemuProcessState =
+  | "not-started"
+  | "starting"
+  | "running"
+  | "stopping"
+  | "stopped"
+  | "failed"
+  | "timed-out"
+  | "cancelled";
+
+export type QemuTerminationReason =
+  | "graceful"
+  | "forced"
+  | "unexpected-exit"
+  | "failed-to-start"
+  | "timed-out"
+  | "cancelled";
+
+export interface QemuProcessOutput {
+  stdout: string;
+  stderr: string;
+  truncated: boolean;
+}
+
+export interface QemuProcessStatus {
+  vmId: string;
+  state: QemuProcessState;
+  processId: number | null;
+  exitCode: number | null;
+  terminationReason: QemuTerminationReason | null;
+  output: QemuProcessOutput;
+}
