@@ -6,7 +6,7 @@ NexoraVM is an early-stage desktop application for defining virtual machines, di
 
 ## Current Status
 
-NexoraVM is in active early development. The desktop shell, persistent application settings, typed VM configuration, persistent VM definitions, VM management UI, and safe QEMU discovery diagnostics are implemented. Real VM execution is not implemented yet.
+NexoraVM is in active early development. The desktop shell, persistent application settings, typed VM configuration, persistent VM definitions, VM management UI, safe QEMU discovery diagnostics, and controlled validated process management are implemented. Complete VM runtime integration is not implemented yet.
 
 The current application can launch only a validated QEMU command specification when QEMU is detected. It does not create virtual disks, integrate WHPX execution, manage guest networking, run AI models, or provide a production-ready installer. See [current status](docs/current-status.md) for the exact implementation boundary.
 
@@ -37,7 +37,7 @@ No verified screenshots are included yet. Screenshots will be added after a repe
 
 ## Architecture
 
-The frontend is a React and TypeScript application. Tauri provides the desktop window and a narrow command bridge. Rust owns persistence, validation, structured errors, runtime discovery, and the provider-neutral runtime adapter boundary. The current QEMU adapter performs bounded executable discovery and version diagnostics only. Future QEMU/WHPX execution and AI runtime work will remain behind explicit interfaces rather than leaking process or provider details into the UI.
+The frontend is a React and TypeScript application. Tauri provides the desktop window and a narrow command bridge. Rust owns persistence, validation, structured errors, runtime discovery, the provider-neutral runtime adapter, and managed process state. QEMU process launch is limited to validated specifications; future WHPX integration and AI runtime work will remain behind explicit interfaces rather than leaking process or provider details into the UI.
 
 See [architecture](docs/architecture.md) for data flow, persistence, error handling, and security boundaries.
 

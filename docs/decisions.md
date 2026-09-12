@@ -58,7 +58,7 @@ This document records the current direction. It complements the historical recor
 
 **Rationale:** This prevents the UI from claiming a VM is running based only on persisted data.
 
-**Consequences:** New definitions default to `stopped`, and lifecycle state must eventually come from observed runtime events.
+**Consequences:** Definitions contain configuration only. Lifecycle state comes from observed managed-process events and resets to `not-started` after application restart.
 
 **Status:** Accepted and implemented at the model level.
 
@@ -70,9 +70,9 @@ This document records the current direction. It complements the historical recor
 
 **Rationale:** Deterministic command specifications can be reviewed and unit-tested before a process is launched.
 
-**Consequences:** Start and Stop are placeholders today; runtime discovery is limited to fixed `--version` probing.
+**Consequences:** Start and Stop use only validated command specifications through the in-memory process manager; full guest runtime integration remains deferred.
 
-**Status:** Accepted; execution is deferred.
+**Status:** Accepted and partially implemented.
 
 ## Avoid Unnecessary Privileges
 

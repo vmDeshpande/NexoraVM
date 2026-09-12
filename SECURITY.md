@@ -21,6 +21,8 @@ Relevant risks include command injection, unsafe path composition, malformed per
 
 QEMU process management now uses direct process APIs, separate executable/argument fields, bounded output buffers, duplicate-start protection, stop timeouts, forced termination fallback, and in-memory handles. It still requires deeper process isolation, cancellation policy, cleanup review, and truthful guest-state integration before it is considered complete runtime support. Future AI tools must use explicit capabilities, policy checks, user approval for destructive actions, auditability, and recovery behavior.
 
+The manager never scans for or adopts unrelated processes. Live ownership ends when the application exits; restart does not attempt unsafe process rediscovery or termination.
+
 The current command-construction layer is intentionally preview-only. It validates configuration, rejects shell-like VM names and unsafe paths, rejects unsupported bridged networking, and never starts QEMU or creates disks.
 
 ## Reporting a Vulnerability

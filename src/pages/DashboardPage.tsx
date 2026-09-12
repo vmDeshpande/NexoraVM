@@ -7,7 +7,7 @@ import { RuntimeDiagnostics } from "../components/RuntimeDiagnostics";
 import type { NavigationView } from "../types/navigation";
 import type { RuntimeSnapshot } from "../types/runtime";
 import { vmService } from "../lib/vmService";
-import type { VmDefinition } from "../types/vmConfig";
+import type { QemuProcessStatus } from "../types/runtimeStatus";
 
 interface DashboardPageProps {
   onNavigate: (view: NavigationView) => void;
@@ -16,16 +16,16 @@ interface DashboardPageProps {
 
 export function DashboardPage({ onNavigate, snapshot }: DashboardPageProps) {
   const hasActivity = snapshot.activity.length > 0;
-  const [definitions, setDefinitions] = useState<VmDefinition[]>([]);
+  const [processStatuses, setProcessStatuses] = useState<QemuProcessStatus[]>([]);
   const [vmLoadError, setVmLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     let isCurrent = true;
     vmService
-      .listVmDefinitions()
-      .then((loadedDefinitions) => {
+      .refreshAllVmProcessStatuses()
+      .then((loadedStatuses) => {
         if (isCurrent) {
-          setDefinitions(loadedDefinitions);
+          setProcessStatuses(loadedStatuses);
           setVmLoadError(null);
         }
       })
@@ -40,9 +40,11 @@ export function DashboardPage({ onNavigate, snapshot }: DashboardPageProps) {
     };
   }, []);
 
-  const vmCount = definitions.length;
-  const stoppedCount = definitions.filter((definition) => definition.status === "stopped").length;
-  const runningCount = definitions.filter((definition) => definition.status === "running").length;
+  const vmCount = processStatuses.length;
+  const stoppedCount = processStatuses.filter((status) => status.state === "stopped").length;
+  const runningCount = processStatuses.filter((status) => status.state === "running").length;
+  const failedCount = processStatuses.filter((status) => status.state === "failed").length;
+  const unknownCount = processStatuses.filter((status) => status.state === "not-started").length;
 
   return (
     <div className="dashboard">
@@ -68,7 +70,7 @@ export function DashboardPage({ onNavigate, snapshot }: DashboardPageProps) {
         <StatCard
           detail={
             vmLoadError ??
-            `${stoppedCount} stopped · ${runningCount} running`
+            `${stoppedCount} stopped · ${runningCount} running · ${failedCount} failed · ${unknownCount} not started`
           }
           label="Virtual machines"
           tone={vmCount > 0 ? "success" : "neutral"}

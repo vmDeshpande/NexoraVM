@@ -42,7 +42,7 @@ This is the canonical NexoraVM roadmap. A checked item means the repository cont
 
 **Objective:** manage VM definitions without executing a runtime.
 
-**Deliverables:** persistent VM definitions, create/edit/delete flow, validation, UUID-based IDs, separate VM status model, empty/loading/error states.
+**Deliverables:** persistent configuration-only VM definitions, create/edit/delete flow, validation, UUID-based IDs, live process status model, empty/loading/error states.
 
 **Dependencies:** Phase 2.
 
@@ -90,7 +90,7 @@ This is the canonical NexoraVM roadmap. A checked item means the repository cont
 
 **Objective:** connect persisted definitions to real runtime state.
 
-**Deliverables:** startup, shutdown, state synchronization, console/display integration, and error recovery.
+**Deliverables:** startup, shutdown, state synchronization, console/display integration, error recovery, restart semantics, and managed-process observability.
 
 **Dependencies:** Phases 5–6 and WHPX/host capability work.
 

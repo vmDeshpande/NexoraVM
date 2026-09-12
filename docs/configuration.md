@@ -21,7 +21,7 @@ Settings are stored in `settings.json`. Save validates values and paths. Reset w
 
 ## VM Definitions
 
-VM definitions are stored separately in `vm-definitions.json`. A definition contains a `VmConfiguration` plus a separate runtime status. New definitions receive generated UUID-based IDs and start as `stopped`. `diskPath` is optional and backward-compatible with existing definitions that do not contain it.
+VM definitions are stored separately in `vm-definitions.json` and contain configuration only. New definitions receive generated UUID-based IDs. `diskPath` is optional and backward-compatible with existing definitions that do not contain it. Live process state is held only by the Rust process manager.
 
 Configuration includes name, operating system, CPU count, memory, disk size, ISO path, network mode, display mode, Secure Boot, and TPM. Validation rejects empty or oversized names, invalid IDs, unsupported resource ranges, and syntactically invalid paths. An ISO file does not need to exist yet.
 

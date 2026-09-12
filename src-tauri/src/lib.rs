@@ -5,7 +5,9 @@ pub mod settings;
 pub mod vm_config;
 pub mod vm_definitions;
 
-use process_manager::{get_vm_process_status, start_vm, stop_vm, ProcessManagerState};
+use process_manager::{
+    get_vm_process_status, refresh_all_vm_runtime_status, start_vm, stop_vm, ProcessManagerState,
+};
 use runtime_adapter::{build_qemu_command_spec, get_runtime_status, refresh_runtime_status};
 use settings::{get_app_settings, reset_app_settings, save_app_settings};
 use vm_definitions::{
@@ -30,6 +32,7 @@ pub fn run() {
             start_vm,
             stop_vm,
             get_vm_process_status,
+            refresh_all_vm_runtime_status,
             get_runtime_status,
             refresh_runtime_status,
             build_qemu_command_spec

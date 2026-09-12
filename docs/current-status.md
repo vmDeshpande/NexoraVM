@@ -36,6 +36,7 @@ Manual native-window interaction has not been represented as completed verificat
 - `refresh_runtime_status`
 - `build_qemu_command_spec`
 - `get_vm_process_status`
+- `refresh_all_vm_runtime_status`
 
 The Start/Stop commands launch or stop only a validated QEMU command specification through the in-memory process manager. They do not modify persisted VM configuration or claim a guest is running when the process is unavailable.
 
@@ -45,7 +46,7 @@ The command-spec command returns a deterministic executable path and ordered arg
 
 Settings persist as JSON in the OS application-data directory. Supported settings include QEMU executable path, default VM storage and ISO paths, memory, CPU count, display mode, start-minimized preference, and update checks.
 
-VM definitions persist separately as JSON. They contain typed configuration for name, operating system, CPU, memory, disk size, ISO path, network mode, display mode, Secure Boot, and TPM. VM runtime status is separate from configuration and defaults to `stopped`.
+VM definitions persist separately as JSON and contain typed configuration only. They do not persist process handles or runtime status. Live process state is returned by the Rust process manager and starts as `not-started` after application restart.
 
 ## Runtime Discovery
 
@@ -57,7 +58,7 @@ The Virtual Machines page can preview the structured QEMU configuration for a pe
 
 ## Tests and Validation
 
-The Rust suite covers settings recovery, VM validation, VM serialization, definition storage recovery, duplicate and missing IDs, status defaults, runtime status serialization, invalid paths, version parsing, missing executables, command-spec generation, process validation, duplicate starts, failed launches, immediate exits, graceful stop, forced-stop fallback, output limits, and process cleanup.
+The Rust suite covers settings recovery, VM validation, VM serialization, definition storage recovery, duplicate and missing IDs, status defaults, runtime status serialization, invalid paths, version parsing, missing executables, command-spec generation, process validation, duplicate starts/stops, failed launches, immediate exits, graceful stop, forced-stop fallback, output limits, monitoring, and process cleanup.
 
 Repository validation commands are documented in [development](development.md). Build output, `node_modules`, and Rust `target` directories are not documentation deliverables.
 

@@ -11,6 +11,7 @@ export interface VmService {
   startVm: (vmId: string) => Promise<QemuProcessStatus>;
   stopVm: (vmId: string) => Promise<QemuProcessStatus>;
   getVmProcessStatus: (vmId: string) => Promise<QemuProcessStatus>;
+  refreshAllVmProcessStatuses: () => Promise<QemuProcessStatus[]>;
   buildQemuCommandSpec: (vmId: string) => Promise<QemuCommandSpec>;
 }
 
@@ -26,6 +27,8 @@ export const vmService: VmService = {
   stopVm: (vmId) => invoke<QemuProcessStatus>("stop_vm", { vmId }),
   getVmProcessStatus: (vmId) =>
     invoke<QemuProcessStatus>("get_vm_process_status", { vmId }),
+  refreshAllVmProcessStatuses: () =>
+    invoke<QemuProcessStatus[]>("refresh_all_vm_runtime_status"),
   buildQemuCommandSpec: (vmId) =>
     invoke<QemuCommandSpec>("build_qemu_command_spec", { vmId }),
 };

@@ -2,14 +2,6 @@ import type { DisplayMode } from "./settings";
 
 export type OperatingSystem = "windows" | "linux" | "bsd" | "other";
 export type NetworkMode = "disabled" | "user" | "bridged";
-export type VmStatus =
-  | "stopped"
-  | "starting"
-  | "running"
-  | "stopping"
-  | "error"
-  | "unknown";
-
 export interface VmConfiguration {
   id: string;
   name: string;
@@ -27,5 +19,4 @@ export interface VmConfiguration {
 
 export interface VmDefinition {
   configuration: VmConfiguration;
-  status: VmStatus;
 }

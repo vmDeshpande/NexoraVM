@@ -28,6 +28,8 @@ The typed status includes:
 
 Dashboard and Settings expose the same status through `get_runtime_status` and `refresh_runtime_status`, using the dedicated frontend runtime service.
 
+VM runtime status is available through `get_vm_process_status` and `refresh_all_vm_runtime_status`. These commands inspect only processes owned by the in-memory process manager. They do not scan for or adopt unrelated QEMU processes.
+
 ## QEMU Command Preview
 
 Milestone 5 adds `QemuCommandSpec`, which keeps the executable path separate from an ordered `arguments` list. A preview is built from a validated persisted VM configuration and detected runtime status through `build_qemu_command_spec`. It includes the VM ID, acceleration choice, display mode, network mode, diagnostics, and optional working directory.
@@ -40,6 +42,8 @@ The generator emits deterministic arguments for VM name, `q35`, CPU count, memor
 
 Live process handles are kept only in Tauri-managed memory. They are not persisted in VM definitions. Process states include `starting`, `running`, `stopping`, `stopped`, `failed`, `timed-out`, and `cancelled`. Start reports a process as running only after the child is observed alive. Immediate exits become failures, duplicate starts are rejected, and stop uses a bounded graceful-stop attempt followed by forced termination when needed.
 
+A monitor thread checks managed children at a bounded interval, records exit codes and output, and removes the live child handle after exit. It uses short mutex scopes and never adopts a process after application restart.
+
 Actual QEMU process launch is now technically enabled when runtime discovery succeeds, but this is not complete VM execution. No disk is created, no WHPX feature is enabled, and no guest display or full lifecycle synchronization is provided yet.
 
 ## WHPX and CPU Virtualization
@@ -48,4 +52,4 @@ On Windows, WHPX and CPU virtualization are currently reported as `unknown` beca
 
 ## Before Real VM Execution
 
-Controlled process launch now exists, but complete VM runtime integration still requires truthful guest-state synchronization, cancellation policy, cleanup review, logging policy, console/display handling, and deeper host capability handling. The next milestone must build those pieces without weakening the typed command and least-privilege boundaries.
+Controlled process launch now exists, but complete VM runtime integration still requires truthful guest-state synchronization, cancellation policy, cleanup review, logging policy, console/display handling, and deeper host capability handling. On application restart, previously managed processes are reported as `not-started`; NexoraVM does not rediscover or adopt unrelated processes. The next milestone must build those pieces without weakening the typed command and least-privilege boundaries.

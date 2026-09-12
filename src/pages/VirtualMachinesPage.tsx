@@ -65,20 +65,9 @@ export function VirtualMachinesPage() {
     try {
       const loadedDefinitions = await vmService.listVmDefinitions();
       setDefinitions(loadedDefinitions);
-      const statusEntries = await Promise.all(
-        loadedDefinitions.map(async (definition) => {
-          try {
-            return [
-              definition.configuration.id,
-              await vmService.getVmProcessStatus(definition.configuration.id),
-            ] as const;
-          } catch {
-            return null;
-          }
-        }),
-      );
+      const statuses = await vmService.refreshAllVmProcessStatuses();
       setProcessStatuses(
-        Object.fromEntries(statusEntries.filter((entry): entry is readonly [string, QemuProcessStatus] => entry !== null)),
+        Object.fromEntries(statuses.map((status) => [status.vmId, status])),
       );
       setError(null);
     } catch (loadError) {
@@ -562,6 +551,16 @@ function VmCard({
       <p className="vm-card__note">
         {configuration.isoPath ? `ISO: ${configuration.isoPath}` : "No ISO selected"}
       </p>
+      {processStatus.exitCode !== null || processStatus.terminationReason ? (
+        <p className="vm-card__note">
+          {processStatus.exitCode !== null
+            ? `Exit code: ${processStatus.exitCode}`
+            : "No exit code"}
+          {processStatus.terminationReason
+            ? ` · ${formatLabel(processStatus.terminationReason)}`
+            : ""}
+        </p>
+      ) : null}
       <div className="vm-card__actions">
         <Button
           disabled={disabled || processAction || !canStart(processStatus.state)}

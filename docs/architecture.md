@@ -81,3 +81,5 @@ Commands return structured errors with a code, user-facing message, and optional
 The frontend does not execute host commands directly. Runtime discovery and process management do not use a shell, do not accept arbitrary argument lists, do not scan the entire filesystem, and do not request administrator privileges. The process manager accepts only builder-produced specifications and bounds captured output.
 
 The separation between VM configuration and runtime state prevents stored intent from being mistaken for actual execution state. The provider-neutral adapter also leaves room for another runtime without coupling the UI to QEMU command syntax.
+
+Runtime state is authoritative in the Rust process manager. Persisted VM definitions contain configuration only; process handles, exit codes, termination reasons, and live states are memory-only. After application restart, the backend starts with no managed handles and reports definitions as not started rather than claiming ownership of an existing process.

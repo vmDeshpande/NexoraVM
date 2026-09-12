@@ -9,28 +9,10 @@ use uuid::Uuid;
 
 const VM_DEFINITIONS_FILE_NAME: &str = "vm-definitions.json";
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub enum VmStatus {
-    Stopped,
-    Starting,
-    Running,
-    Stopping,
-    Error,
-    Unknown,
-}
-
-impl Default for VmStatus {
-    fn default() -> Self {
-        Self::Stopped
-    }
-}
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VmDefinition {
     pub configuration: VmConfiguration,
-    pub status: VmStatus,
 }
 
 #[tauri::command]
@@ -56,10 +38,7 @@ pub fn create_vm_definition(
     configuration.validate()?;
 
     let mut definitions = load_definitions(&app)?;
-    let definition = VmDefinition {
-        configuration,
-        status: VmStatus::default(),
-    };
+    let definition = VmDefinition { configuration };
     if definitions
         .iter()
         .any(|item| item.configuration.id == definition.configuration.id)
@@ -176,18 +155,14 @@ fn validate_id(id: &str) -> Result<(), CommandError> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_definitions_or_empty, validate_loaded_definitions, VmDefinition, VmStatus};
+    use super::{parse_definitions_or_empty, validate_loaded_definitions, VmDefinition};
 
     #[test]
-    fn new_vm_status_defaults_to_stopped() {
-        assert_eq!(VmStatus::default(), VmStatus::Stopped);
-    }
-
-    #[test]
-    fn status_serializes_and_deserializes() {
-        let definition = VmDefinition {
-            configuration: serde_json::from_str(
-                r#"{
+    fn definitions_serialize_configuration_without_runtime_status() {
+        let definition: VmDefinition = serde_json::from_str(
+            r#"{
+                    "status": "running",
+                    "configuration": {
                     "id": "vm-test",
                     "name": "Test VM",
                     "operatingSystem": "linux",
@@ -199,14 +174,12 @@ mod tests {
                     "displayMode": "windowed",
                     "secureBootEnabled": false,
                     "tpmEnabled": false
+                    }
                 }"#,
-            )
-            .unwrap(),
-            status: VmStatus::default(),
-        };
-        let restored: VmDefinition =
-            serde_json::from_str(&serde_json::to_string(&definition).unwrap()).unwrap();
-        assert_eq!(restored.status, VmStatus::Stopped);
+        )
+        .unwrap();
+        let serialized = serde_json::to_string(&definition).unwrap();
+        assert!(!serialized.contains("status"));
     }
 
     #[test]
