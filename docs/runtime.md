@@ -28,6 +28,12 @@ The typed status includes:
 
 Dashboard and Settings expose the same status through `get_runtime_status` and `refresh_runtime_status`, using the dedicated frontend runtime service.
 
+## QEMU Command Preview
+
+Milestone 5 adds `QemuCommandSpec`, which keeps the executable path separate from an ordered `arguments` list. A preview is built from a validated persisted VM configuration and detected runtime status through `build_qemu_command_spec`. It includes the VM ID, acceleration choice, display mode, network mode, diagnostics, and optional working directory.
+
+The generator emits deterministic arguments for VM name, `q35`, CPU count, memory, acceleration, display, network, optional disk, and optional ISO. Disk paths are represented in a single QEMU drive argument and are rejected when they contain option-separator commas. Bridged networking is rejected as unsupported; unknown or unavailable WHPX selects the explicit `tcg` fallback. The preview is never executed and does not create or modify disk files.
+
 ## WHPX and CPU Virtualization
 
 On Windows, WHPX and CPU virtualization are currently reported as `unknown` because reliable detection is not implemented. On non-Windows builds, Windows-specific diagnostics report `unsupported`. NexoraVM does not enable, disable, or modify Windows features and does not request administrator privileges.

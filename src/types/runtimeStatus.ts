@@ -29,3 +29,18 @@ export interface RuntimeStatus {
   diagnostics: RuntimeDiagnostic[];
   lastChecked: string;
 }
+
+export type QemuAcceleration = "whpx" | "tcg";
+export type QemuDisplayMode = "sdl" | "gtk-fullscreen" | "none";
+export type QemuNetworkMode = "none" | "user";
+
+export interface QemuCommandSpec {
+  executablePath: string;
+  arguments: string[];
+  workingDirectory: string | null;
+  vmId: string;
+  diagnostics: RuntimeDiagnostic[];
+  acceleration: QemuAcceleration;
+  displayMode: QemuDisplayMode;
+  networkMode: QemuNetworkMode;
+}

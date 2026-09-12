@@ -1,4 +1,5 @@
 use crate::{
+    qemu_command::{build_qemu_command_spec as build_spec, QemuCommandSpec},
     settings::{get_app_settings, AppSettings, CommandError},
     vm_config::VmConfiguration,
 };
@@ -18,6 +19,11 @@ const QEMU_EXECUTABLE_NAMES: [&str; 2] = ["qemu-system-x86_64.exe", "qemu-system
 pub trait RuntimeAdapter {
     fn check_availability(&self) -> Result<RuntimeAvailability, CommandError>;
     fn discover_capabilities(&self, settings: &AppSettings) -> Result<RuntimeStatus, CommandError>;
+    fn build_command_spec(
+        &self,
+        config: &VmConfiguration,
+        status: &RuntimeStatus,
+    ) -> Result<QemuCommandSpec, CommandError>;
     fn validate_vm_configuration(&self, config: &VmConfiguration) -> Result<(), CommandError>;
     fn create_vm_definition(
         &self,
@@ -102,6 +108,14 @@ impl RuntimeAdapter for QemuRuntimeAdapter {
 
     fn discover_capabilities(&self, settings: &AppSettings) -> Result<RuntimeStatus, CommandError> {
         discover_qemu_capabilities(settings)
+    }
+
+    fn build_command_spec(
+        &self,
+        config: &VmConfiguration,
+        status: &RuntimeStatus,
+    ) -> Result<QemuCommandSpec, CommandError> {
+        build_spec(config, status)
     }
 
     fn validate_vm_configuration(&self, config: &VmConfiguration) -> Result<(), CommandError> {
@@ -323,6 +337,17 @@ pub fn start_vm(vm_id: String) -> Result<(), CommandError> {
 #[tauri::command]
 pub fn stop_vm(vm_id: String) -> Result<(), CommandError> {
     QemuRuntimeAdapter.stop_vm(&vm_id)
+}
+
+#[tauri::command]
+pub fn build_qemu_command_spec(
+    app: AppHandle,
+    vm_id: String,
+) -> Result<QemuCommandSpec, CommandError> {
+    let definition = crate::vm_definitions::get_vm_definition(app.clone(), vm_id)?;
+    let settings = get_app_settings(app)?;
+    let status = QemuRuntimeAdapter.discover_capabilities(&settings)?;
+    QemuRuntimeAdapter.build_command_spec(&definition.configuration, &status)
 }
 
 fn not_implemented(message: impl Into<String>) -> CommandError {

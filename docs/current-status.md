@@ -8,6 +8,7 @@ NexoraVM is an early-development desktop application. This document describes th
 2. Persistent application settings and typed VM/runtime configuration foundation.
 3. Persistent VM definitions and VM management flow.
 4. Runtime discovery and QEMU capability diagnostics.
+5. Safe typed QEMU command-spec construction and preview.
 
 ## Implemented Frontend
 
@@ -32,8 +33,11 @@ Manual native-window interaction has not been represented as completed verificat
 - `stop_vm`
 - `get_runtime_status`
 - `refresh_runtime_status`
+- `build_qemu_command_spec`
 
 The Start/Stop commands intentionally return `not_implemented` and do not launch a VM.
+
+The command-spec command returns a deterministic executable path and ordered argument list for diagnostics only. It does not launch QEMU, create disks, or change host state.
 
 ## Settings and VM Definitions
 
@@ -47,6 +51,8 @@ Runtime diagnostics check the configured QEMU path first, then bounded standard 
 
 The result includes QEMU availability, configured and detected paths, version text when available, diagnostics, and WHPX/CPU virtualization capability states. Windows capability states are currently `unknown`; non-Windows builds report the Windows-specific diagnostics as `unsupported`.
 
+The Virtual Machines page can preview the structured QEMU configuration for a persisted definition. Supported preview mappings include CPU, memory, optional disk and ISO paths, windowed/fullscreen/headless display, disabled/user networking, and TCG fallback acceleration. Bridged networking is currently unsupported.
+
 ## Tests and Validation
 
 The Rust suite covers settings recovery, VM validation, VM serialization, definition storage recovery, duplicate and missing IDs, status defaults, runtime status serialization, invalid paths, version parsing, missing executables, and placeholder lifecycle behavior.
@@ -56,6 +62,7 @@ Repository validation commands are documented in [development](development.md). 
 ## Known Limitations
 
 - No QEMU VM process execution.
+- No QEMU process execution from command previews.
 - No real VM startup, shutdown, pause, or lifecycle synchronization.
 - No WHPX execution integration or reliable Windows virtualization detection.
 - No virtual disk creation or disk management.
@@ -66,4 +73,4 @@ Repository validation commands are documented in [development](development.md). 
 
 ## Intentionally Deferred
 
-Controlled QEMU command construction must be designed and tested before process management. Later work must also address host capability detection, storage, networking, runtime state events, guest interaction, AI permissions, security review, and release hardening.
+Controlled QEMU command construction is now implemented as a preview-only boundary. The next runtime milestone must add controlled process management, with explicit security review, timeouts, cancellation, cleanup, and truthful state synchronization.

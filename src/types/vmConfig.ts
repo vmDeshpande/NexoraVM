@@ -17,6 +17,7 @@ export interface VmConfiguration {
   cpuCount: number;
   memoryMiB: number;
   diskSizeGiB: number;
+  diskPath: string | null;
   isoPath: string;
   networkMode: NetworkMode;
   displayMode: DisplayMode;

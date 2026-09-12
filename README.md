@@ -21,6 +21,7 @@ The current application does not start or stop QEMU, create virtual disks, integ
 | VM create/edit/delete | Implemented | Persistent definitions, UUID-based IDs, typed form, and delete confirmation. |
 | Runtime discovery | Implemented | Bounded configured-path, standard-location, and PATH lookup. |
 | QEMU detection | Partial | Regular-file validation and fixed `--version` probing; no VM launch. |
+| QEMU command preview | Implemented | Deterministic typed specification only; preview never executes QEMU. |
 | QEMU execution | Not implemented | Controlled command construction must precede process execution. |
 | WHPX integration | Planned | Current Windows capability fields report `unknown`; no WHPX execution exists. |
 | VM lifecycle | Not implemented | Start/Stop commands are explicit placeholders. |

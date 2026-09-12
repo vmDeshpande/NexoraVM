@@ -17,6 +17,8 @@ pub struct VmConfiguration {
     pub cpu_count: u8,
     pub memory_mi_b: u32,
     pub disk_size_gi_b: u32,
+    #[serde(default)]
+    pub disk_path: Option<String>,
     pub iso_path: String,
     pub network_mode: NetworkMode,
     pub display_mode: DisplayMode,
@@ -153,6 +155,7 @@ mod tests {
             cpu_count: 2,
             memory_mi_b: 4096,
             disk_size_gi_b: 64,
+            disk_path: None,
             iso_path: String::new(),
             network_mode: NetworkMode::User,
             display_mode: DisplayMode::Windowed,

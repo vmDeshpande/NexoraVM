@@ -7,6 +7,7 @@ NexoraVM handles virtualization configuration and will eventually manage host pr
 - No arbitrary shell execution.
 - No unrestricted command strings or user-provided process argument lists.
 - Runtime discovery uses fixed executable names, bounded lookup locations, and the fixed `--version` argument.
+- QEMU command previews use a typed executable path and ordered arguments; they do not expose shell strings or arbitrary flags.
 - Paths and VM resources are validated before persistence.
 - No administrator privileges are requested.
 - No Windows features, firewall rules, or networking are modified.
@@ -19,6 +20,8 @@ NexoraVM handles virtualization configuration and will eventually manage host pr
 Relevant risks include command injection, unsafe path composition, malformed persisted data, excessive host access, untrusted guest behavior, privilege escalation, dependency compromise, and future AI actions that exceed user intent.
 
 Future QEMU process management must address typed command construction, process isolation, least privilege, output and resource limits, timeouts, cancellation, cleanup, and truthful runtime-state updates. Future AI tools must use explicit capabilities, policy checks, user approval for destructive actions, auditability, and recovery behavior.
+
+The current command-construction layer is intentionally preview-only. It validates configuration, rejects shell-like VM names and unsafe paths, rejects unsupported bridged networking, and never starts QEMU or creates disks.
 
 ## Reporting a Vulnerability
 

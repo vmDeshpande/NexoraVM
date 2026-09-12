@@ -48,6 +48,22 @@ impl CommandError {
             field: None,
         }
     }
+
+    pub fn runtime(message: impl Into<String>) -> Self {
+        Self {
+            code: "runtime_error",
+            message: message.into(),
+            field: None,
+        }
+    }
+
+    pub fn unsupported(message: impl Into<String>) -> Self {
+        Self {
+            code: "unsupported",
+            message: message.into(),
+            field: None,
+        }
+    }
 }
 
 impl From<io::Error> for CommandError {

@@ -62,17 +62,17 @@ This is the canonical NexoraVM roadmap. A checked item means the repository cont
 
 **Completion criteria:** missing and invalid QEMU paths produce structured diagnostics, and the Rust test suite covers the discovery boundary.
 
-## Phase 5 — Safe QEMU Command Construction — Planned
+## Phase 5 — Safe QEMU Command Construction — Completed
 
 **Objective:** produce deterministic, validated QEMU command specifications without starting a process.
 
-**Deliverables:** typed command specification, deterministic argument generation, disk and ISO mapping, display and network mapping, security validation, unit tests.
+**Deliverables:** typed command specification, deterministic argument generation, optional disk and ISO mapping, display and network mapping, TCG/WHPX acceleration selection, security validation, VM-page preview, and unit tests. The specification is not executed.
 
 **Dependencies:** VM configuration, runtime diagnostics, storage design.
 
 **Security considerations:** prohibit arbitrary arguments, shell interpolation, unsafe path composition, and unsupported device mappings.
 
-**Completion criteria:** a command specification can be reviewed and tested without spawning QEMU.
+**Completion criteria:** a command specification can be reviewed and tested without spawning QEMU. This milestone is complete.
 
 ## Phase 6 — Controlled QEMU Process Management — Planned
 

@@ -164,6 +164,7 @@ fn validate_id(id: &str) -> Result<(), CommandError> {
         cpu_count: 1,
         memory_mi_b: 512,
         disk_size_gi_b: 1,
+        disk_path: None,
         iso_path: String::new(),
         network_mode: NetworkMode::Disabled,
         display_mode: DisplayMode::Headless,

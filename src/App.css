@@ -854,6 +854,25 @@ button:focus-visible {
   flex: 1 1 auto;
 }
 
+.command-preview {
+  display: grid;
+  gap: 16px;
+}
+
+.command-preview__arguments {
+  max-height: 280px;
+  overflow: auto;
+  margin: 0;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 8px;
+  background: rgba(9, 13, 19, 0.78);
+  color: #d8e5ed;
+  font: 0.82rem/1.55 "Cascadia Code", Consolas, monospace;
+  padding: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .field--wide {
   grid-column: span 2;
 }

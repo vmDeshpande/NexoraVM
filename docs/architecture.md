@@ -47,6 +47,8 @@ Rust owns validation, persistence, structured command errors, runtime discovery,
 
 QEMU is the planned runtime backend. Current code only checks bounded candidate paths and invokes a validated executable with the fixed `--version` argument. WHPX and CPU virtualization states are reported as `unknown` on Windows until reliable detection is implemented. No Windows features are enabled automatically.
 
+The command-construction layer now produces a typed `QemuCommandSpec` with a `PathBuf` executable and ordered argument vector. It is a diagnostic preview boundary, not process management. The builder maps only supported display and network modes, uses TCG when WHPX is not confirmed available, and rejects unsupported bridged networking. No shell command string or arbitrary QEMU flags are accepted.
+
 ### Future AI runtime
 
 The AI workspace is intended to sit behind provider-neutral model and capability interfaces. Future AI actions must pass through policy, user approval where appropriate, and observable execution boundaries. AI code is not implemented yet.
@@ -67,6 +69,8 @@ The AI workspace is intended to sit behind provider-neutral model and capability
 4. Rust validates the model or performs a bounded diagnostic operation.
 5. Rust returns typed data or a structured error.
 6. The page updates its loading, success, or error state.
+
+For command preview, a VM ID is resolved to a persisted definition, runtime diagnostics are refreshed, and the Rust builder returns structured executable/argument data. No process is launched.
 
 ## Error Handling
 

@@ -10,6 +10,7 @@ import type {
   VmDefinition,
 } from "../types/vmConfig";
 import type { DisplayMode } from "../types/settings";
+import type { QemuCommandSpec } from "../types/runtimeStatus";
 
 const defaultConfiguration: VmConfiguration = {
   id: "",
@@ -18,6 +19,7 @@ const defaultConfiguration: VmConfiguration = {
   cpuCount: 2,
   memoryMiB: 4096,
   diskSizeGiB: 64,
+  diskPath: null,
   isoPath: "",
   networkMode: "user",
   displayMode: "windowed",
@@ -48,6 +50,8 @@ export function VirtualMachinesPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [preview, setPreview] = useState<QemuCommandSpec | null>(null);
+  const [previewingId, setPreviewingId] = useState<string | null>(null);
 
   const loadDefinitions = async () => {
     try {
@@ -126,6 +130,19 @@ export function VirtualMachinesPage() {
     }
   };
 
+  const previewCommand = async (vmId: string) => {
+    setPreviewingId(vmId);
+    setPreview(null);
+    setError(null);
+    try {
+      setPreview(await vmService.buildQemuCommandSpec(vmId));
+    } catch (previewError) {
+      setError(getCommandErrorMessage(previewError));
+    } finally {
+      setPreviewingId(null);
+    }
+  };
+
   const controlsDisabled = loading || saving || deletingId !== null;
 
   return (
@@ -189,10 +206,13 @@ export function VirtualMachinesPage() {
               disabled={controlsDisabled}
               onDelete={() => void deleteDefinition(definition)}
               onEdit={() => openEditForm(definition)}
+              onPreview={() => void previewCommand(definition.configuration.id)}
+              previewing={previewingId === definition.configuration.id}
             />
           ))}
         </div>
       )}
+      {preview ? <CommandPreview spec={preview} /> : null}
     </div>
   );
 }
@@ -270,6 +290,17 @@ function VmDefinitionForm({
           onChange={(value) => update("diskSizeGiB", value)}
           value={configuration.diskSizeGiB}
         />
+        <label className="field field--wide">
+          <span>Virtual disk path (optional)</span>
+          <input
+            disabled={disabled}
+            onChange={(event) =>
+              update("diskPath", event.target.value.trim() || null)
+            }
+            placeholder="Optional; no disk is created"
+            value={configuration.diskPath ?? ""}
+          />
+        </label>
         <label className="field field--wide">
           <span>ISO path (optional)</span>
           <input
@@ -403,9 +434,19 @@ interface VmCardProps {
   disabled: boolean;
   onDelete: () => void;
   onEdit: () => void;
+  onPreview: () => void;
+  previewing: boolean;
 }
 
-function VmCard({ definition, deleting, disabled, onDelete, onEdit }: VmCardProps) {
+function VmCard({
+  definition,
+  deleting,
+  disabled,
+  onDelete,
+  onEdit,
+  onPreview,
+  previewing,
+}: VmCardProps) {
   const { configuration } = definition;
   return (
     <article className="vm-card">
@@ -450,6 +491,9 @@ function VmCard({ definition, deleting, disabled, onDelete, onEdit }: VmCardProp
         <Button disabled={disabled} onClick={onEdit}>
           Edit
         </Button>
+        <Button disabled={disabled || previewing} onClick={onPreview}>
+          {previewing ? "Checking" : "Preview QEMU configuration"}
+        </Button>
         <Button disabled={disabled || deleting} onClick={onDelete}>
           {deleting ? "Deleting" : "Delete"}
         </Button>
@@ -463,4 +507,51 @@ function formatLabel(value: string) {
     .split(/(?=[A-Z])|-/)
     .join(" ")
     .replace(/^\w/, (character) => character.toUpperCase());
+}
+
+interface CommandPreviewProps {
+  spec: QemuCommandSpec;
+}
+
+function CommandPreview({ spec }: CommandPreviewProps) {
+  return (
+    <section className="panel command-preview">
+      <div className="panel__header">
+        <div>
+          <p className="section-kicker">Diagnostic preview</p>
+          <h2>QEMU command specification</h2>
+        </div>
+        <span className="panel__meta">Not executed</span>
+      </div>
+      <dl className="runtime-details">
+        <div>
+          <dt>VM ID</dt>
+          <dd>{spec.vmId}</dd>
+        </div>
+        <div>
+          <dt>Acceleration</dt>
+          <dd>{formatLabel(spec.acceleration)}</dd>
+        </div>
+        <div>
+          <dt>Display</dt>
+          <dd>{formatLabel(spec.displayMode)}</dd>
+        </div>
+        <div>
+          <dt>Network</dt>
+          <dd>{formatLabel(spec.networkMode)}</dd>
+        </div>
+      </dl>
+      <p className="panel__note">
+        Arguments are shown as separate values. This preview does not launch QEMU or change the host.
+      </p>
+      <pre className="command-preview__arguments">{JSON.stringify(spec.arguments, null, 2)}</pre>
+      {spec.diagnostics.length > 0 ? (
+        <ul className="runtime-diagnostics__list">
+          {spec.diagnostics.map((diagnostic) => (
+            <li key={`${diagnostic.code}-${diagnostic.message}`}>{diagnostic.message}</li>
+          ))}
+        </ul>
+      ) : null}
+    </section>
+  );
 }
