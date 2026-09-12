@@ -11,6 +11,18 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
+!.env.example
+
+# Tauri and installer output
+src-tauri/target/
+src-tauri/gen/schemas/
+src-tauri/target/release/bundle/
+
+# Operating-system temporary files
+Thumbs.db
+*.tmp
 
 # Editor directories and files
 .vscode/*

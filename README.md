@@ -1,187 +1,174 @@
 # NexoraVM
 
-> Virtual machines, operated by intelligence.
+> A Windows-first desktop virtualization and AI workspace built with Tauri, React, TypeScript, and Rust.
 
-NexoraVM is a Windows-first desktop application in early development. The long-term product goal is a unified virtualization workspace where users can create virtual machines, select guest operating systems, configure AI model providers, and eventually connect an AI workspace to the selected VM through explicit, auditable controls.
-
-The current repository contains the first production-oriented desktop shell milestone. It does not yet implement VM creation, QEMU integration, Windows Hypervisor Platform integration, AI inference, storage management, or real runtime control.
+NexoraVM is an early-stage desktop application for defining virtual machines, diagnosing local runtime readiness, and eventually operating guest systems through explicit, auditable workflows. The long-term vision is a focused workspace where virtualization, storage, networking, and AI-assisted guest interaction share clear boundaries and user-visible controls.
 
 ## Current Status
 
-**Phase 3 - Persistent VM Definitions**
+NexoraVM is in active early development. The desktop shell, persistent application settings, typed VM configuration, persistent VM definitions, VM management UI, and safe QEMU discovery diagnostics are implemented. Real VM execution is not implemented yet.
 
-Implemented:
+The current application does not start or stop QEMU, create virtual disks, integrate WHPX execution, manage guest networking, run AI models, or provide a production-ready installer. See [current status](docs/current-status.md) for the exact implementation boundary.
 
-- Tauri 2 desktop application at the repository root.
-- React + TypeScript frontend shell.
-- Typed in-memory navigation for Dashboard, Virtual Machines, AI Workspace, Storage, and Settings.
-- Reusable layout and UI components.
-- Runtime snapshot service abstraction for future Tauri commands.
-- Useful empty-state dashboard with runtime, VM, AI provider, storage, and activity sections.
-- Dark-first desktop interface with responsive behavior for smaller windows.
-- Persistent application settings stored as JSON in the operating system application-data directory.
-- Tauri commands for reading, saving, and resetting application settings.
-- Typed VM configuration models and an inert QEMU runtime adapter boundary for future milestones.
-- Persistent VM definitions with create, list, get, update, and delete commands.
-- A Virtual Machines management page with typed create/edit forms and deletion confirmation.
-- Separate persisted VM status values, defaulting new definitions to `stopped`.
-- Dashboard VM totals derived from persisted definitions.
-- Safe runtime discovery diagnostics for configured or standard QEMU installations.
-- Typed QEMU version, WHPX, and Windows virtualization capability diagnostics.
+## Feature Status
 
-Not implemented yet:
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Desktop shell | Implemented | Tauri v2 window, React UI, navigation, responsive layout. |
+| Dashboard | Implemented | Workspace summary, persisted VM totals, and runtime diagnostics. |
+| Persistent settings | Implemented | JSON settings in the OS application-data directory with validation and reset. |
+| VM configuration | Implemented | Typed Rust and TypeScript models with resource and path validation. |
+| VM create/edit/delete | Implemented | Persistent definitions, UUID-based IDs, typed form, and delete confirmation. |
+| Runtime discovery | Implemented | Bounded configured-path, standard-location, and PATH lookup. |
+| QEMU detection | Partial | Regular-file validation and fixed `--version` probing; no VM launch. |
+| QEMU execution | Not implemented | Controlled command construction must precede process execution. |
+| WHPX integration | Planned | Current Windows capability fields report `unknown`; no WHPX execution exists. |
+| VM lifecycle | Not implemented | Start/Stop commands are explicit placeholders. |
+| Storage management | Planned | Storage preferences exist; disk creation and management do not. |
+| AI workspace | Planned | Navigation placeholder only. |
+| AI model integration | Not implemented | No local or cloud inference provider exists. |
+| Snapshots | Planned | No snapshot or restore workflow exists. |
+| Networking | Planned | VM network mode is modeled; host/network configuration is not implemented. |
 
-- VM creation, lifecycle management, guest display, or input forwarding.
-- QEMU or WHPX integration.
-- AI model execution, local model loading, or cloud model connections.
-- Storage provisioning, credentials, telemetry, or analytics.
+## Screenshots
 
-## Application Settings
+No verified screenshots are included yet. Screenshots will be added after a repeatable capture workflow is established for the desktop application.
 
-The Settings page currently supports:
+## Architecture
 
-- Optional QEMU executable path.
-- Optional default VM storage path.
-- Optional default ISO path.
-- Default memory in MiB.
-- Default CPU count.
-- Preferred display mode: windowed, fullscreen, or headless.
-- Start minimized.
-- Check for updates.
+The frontend is a React and TypeScript application. Tauri provides the desktop window and a narrow command bridge. Rust owns persistence, validation, structured errors, runtime discovery, and the provider-neutral runtime adapter boundary. The current QEMU adapter performs bounded executable discovery and version diagnostics only. Future QEMU/WHPX execution and AI runtime work will remain behind explicit interfaces rather than leaking process or provider details into the UI.
 
-Settings are persisted as JSON in the application-data directory chosen by the operating system through Tauri's path API. The repository does not hardcode user-specific absolute paths.
-
-The settings layer validates memory, CPU count, display mode, and basic path shape before writing data. These preferences are configuration only: NexoraVM still does not create VMs, start QEMU, spawn processes, request elevated permissions, or perform privileged virtualization operations.
-
-This milestone prepares the project for QEMU integration by establishing typed settings, typed VM configuration, structured command errors, and a runtime adapter trait. The placeholder QEMU adapter reports clear "not implemented yet" errors for future VM definition and lifecycle operations.
-
-## Virtual Machine Definitions
-
-Virtual machine definitions are persisted as JSON in the same operating-system application-data directory used for settings, in `vm-definitions.json`. Definitions can be created, edited, listed, looked up, and deleted from the Virtual Machines page. New definitions receive generated stable UUID-based identifiers and start with a `stopped` status.
-
-Start and Stop controls are intentionally unavailable because QEMU/WHPX execution, process management, and real lifecycle state are planned for a later milestone. The current status model is ready for that runtime boundary without claiming that a VM is running.
-
-## Runtime Diagnostics
-
-The Dashboard and Settings pages can refresh runtime diagnostics. Discovery checks the configured QEMU path first, then bounded standard installation locations and PATH entries. A candidate must be a regular file before NexoraVM invokes it with the fixed `--version` argument; no shell commands or arbitrary arguments are used. Missing QEMU produces an unavailable status and a diagnostic message rather than an application failure.
-
-WHPX and CPU virtualization diagnostics are currently reported as unknown on Windows because reliable detection is not yet implemented, and unsupported on non-Windows platforms. NexoraVM does not enable Windows features, request administrator privileges, or start QEMU in this milestone.
+See [architecture](docs/architecture.md) for data flow, persistence, error handling, and security boundaries.
 
 ## Technology Stack
 
-- Windows 11 x64 first release target.
-- Tauri v2 for the desktop runtime.
-- Rust for the native application boundary.
-- React for the frontend.
-- TypeScript for strict frontend types.
-- Vite for development and frontend builds.
-- Rust MSVC toolchain for Windows builds.
+- **Tauri v2:** Windows desktop shell and typed bridge to native commands.
+- **React:** component-based frontend and page state management.
+- **TypeScript:** typed UI models and service contracts.
+- **Vite:** frontend development server and production bundling.
+- **Rust:** native application core, validation, persistence, diagnostics, and future process control.
+- **QEMU/WHPX:** planned virtualization backend; neither is used for VM execution yet.
 
-QEMU is planned for a later VM backend milestone and will remain behind a dedicated virtualization adapter.
+## Installation and Development
 
-## Prerequisites
+### Prerequisites
 
 - Node.js and npm.
-- Rust stable with the MSVC toolchain.
-- Tauri v2 prerequisites for Windows development.
-- Microsoft Visual Studio Build Tools or Visual Studio with the C++ desktop workload.
-- WebView2 Runtime, normally already present on Windows 11.
+- Rust stable with the Windows MSVC toolchain.
+- Visual Studio or Visual Studio Build Tools with the Desktop development with C++ workload.
+- Tauri v2 Windows prerequisites.
+- WebView2 Runtime, normally present on Windows 11.
 
-## Installation
+On Windows, Visual Studio Developer PowerShell may be required for the Rust MSVC linker and Windows SDK.
 
-Install frontend dependencies from the repository root:
+### Install dependencies
 
 ```powershell
 npm install
 ```
 
-The project has already been initialized at the repository root. Do not create a nested app directory for normal development.
-
-## Development Commands
-
-Run the Vite frontend:
+### Build and run
 
 ```powershell
 npm run dev
-```
-
-Build the frontend:
-
-```powershell
 npm run build
-```
-
-Run the Tauri desktop app during development:
-
-```powershell
 npm run tauri dev
-```
-
-Build the packaged Tauri app:
-
-```powershell
 npm run tauri build
 ```
 
-Tauri builds may take longer than frontend builds because they compile the Rust application and prepare desktop bundles.
+`npm run tauri build` prepares a packaged build, but NexoraVM does not yet guarantee a production-ready installer or release process.
+
+### Rust validation
+
+```powershell
+cargo fmt --manifest-path .\src-tauri\Cargo.toml -- --check
+cargo check --manifest-path .\src-tauri\Cargo.toml
+cargo test --manifest-path .\src-tauri\Cargo.toml
+git diff --check
+```
+
+The complete contributor workflow is documented in [development](docs/development.md).
 
 ## Project Structure
 
 ```text
 NexoraVM/
-|-- docs/
-|   |-- architecture/
-|   `-- development/
-|-- public/
+|-- docs/                  Documentation and roadmap
+|-- public/                Static frontend assets
 |-- src/
-|   |-- components/
-|   |-- features/
-|   |-- hooks/
-|   |-- layouts/
-|   |-- lib/
-|   |-- pages/
-|   |-- types/
-|   `-- App.tsx
+|   |-- components/        Reusable UI, including runtime diagnostics
+|   |-- features/          Feature-specific frontend data
+|   |-- hooks/              React hooks
+|   |-- layouts/            Desktop shell layout
+|   |-- lib/                Typed frontend services and navigation
+|   |-- pages/              Dashboard, Settings, VM management, placeholders
+|   |-- types/              TypeScript domain models
+|   `-- App.tsx             Frontend route selection
 |-- src-tauri/
-|   |-- capabilities/
-|   |-- icons/
-|   |-- src/
-|   |-- Cargo.toml
-|   `-- tauri.conf.json
-|-- package.json
-|-- tsconfig.json
-`-- vite.config.ts
+|   |-- src/                Rust commands, models, persistence, adapters
+|   |-- capabilities/       Tauri permissions
+|   |-- Cargo.toml          Rust dependencies and package metadata
+|   `-- tauri.conf.json     Tauri application configuration
+|-- package.json            Frontend scripts and dependencies
+`-- vite.config.ts         Vite configuration
 ```
 
-## Architecture Direction
+## Configuration and Persistence
 
-NexoraVM is divided into five major boundaries:
+Application settings are stored as `settings.json` in the operating system's application-data directory selected through Tauri. VM definitions are stored separately as `vm-definitions.json` in the same conceptual location. The repository does not contain user-specific absolute paths.
 
-1. Desktop application: UI, settings, and visual VM interaction.
-2. Application core: orchestration, state, policies, events, and persistence.
-3. Virtualization runtime: adapter over a mature hypervisor backend.
-4. AI runtime: provider abstraction, planning, tool execution, verification, and recovery.
-5. Guest integration: a controlled guest agent for communication with the VM.
+Settings include optional QEMU, VM storage, and ISO paths; default memory and CPU values; display mode; startup preference; and update preference. VM definitions include typed guest, resource, storage, display, network, Secure Boot, and TPM fields. Persistence behavior and validation are described in [configuration](docs/configuration.md).
 
-The current code implements the desktop shell, settings and VM-definition persistence, frontend service boundaries, VM configuration and status types, and the first runtime adapter boundary. QEMU/WHPX execution and AI runtime operations are intentionally deferred.
+## Current Limitations
 
-## Design Principles
+- No actual QEMU process execution.
+- No real VM startup, shutdown, pause, or lifecycle synchronization.
+- No WHPX execution integration or reliable Windows virtualization detection.
+- No virtual disk creation or storage management.
+- No complete network management.
+- No guest display, input forwarding, or guest agent.
+- No AI inference or model-provider integration.
+- No snapshot and restore workflow.
+- No production installer or release guarantee yet.
 
-- Desktop-first: NexoraVM is intended to be a complete desktop executable.
-- Real virtualization: the project will use a mature backend instead of building a hypervisor from scratch.
-- Provider-neutral AI: local and cloud model providers should sit behind a stable abstraction.
-- Explicit user control: sensitive AI and VM actions should be visible, configurable, auditable, and revocable.
-- Isolation by default: host access, networking, clipboard, shared folders, and file transfer should require deliberate configuration.
-- Recoverable automation: future AI actions should be observable and reversible through logs, snapshots, checkpoints, and recovery flows.
+Runtime discovery does not claim that QEMU or WHPX is usable unless the configured or boundedly discovered executable passes the fixed version check. Windows WHPX and CPU virtualization fields currently report `unknown`.
 
-## Planned Next Steps
+## Roadmap
 
-1. Improve Windows host capability detection without elevation.
-2. Add controlled QEMU command construction behind the runtime adapter.
-3. Implement QEMU/WHPX lifecycle operations behind the runtime adapter.
-4. Add VM metadata, disk provisioning, and runtime state events.
-5. Add AI provider configuration and model selection without coupling it to VM orchestration.
+The canonical phased roadmap is [docs/roadmap.md](docs/roadmap.md). It covers safe QEMU command construction, controlled process management, runtime integration, storage and networking, AI workflows, and release hardening.
+
+## Contributing
+
+Contributions should be focused, typed, tested, documented, and security-conscious. Use a branch, preserve existing boundaries, keep Tauri calls in frontend services, add tests for persistence and validation changes, and explain limitations in pull requests. Do not add arbitrary shell execution, unrestricted process arguments, unnecessary administrator privileges, secrets, generated output, or unrelated refactors.
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/development.md](docs/development.md) before opening a pull request.
+
+## Security
+
+Virtualization and process execution are security-sensitive. Arbitrary shell execution, unrestricted command arguments, unsafe path composition, and unnecessary administrator privileges are not acceptable design shortcuts. Future QEMU process management and AI tools must use typed boundaries, least privilege, explicit approvals where needed, bounded resources, and observable error handling.
+
+See [SECURITY.md](SECURITY.md) for the current threat model and deferred security work. A dedicated vulnerability reporting process has not yet been defined.
+
+For troubleshooting and issue-reporting guidance, see [SUPPORT.md](SUPPORT.md).
 
 ## License
 
-License terms will be finalized before the first public implementation release.
+Licensing is not yet specified. A license should be added before broad distribution or accepting contributions under public reuse terms.
+
+## Disclaimer
+
+NexoraVM is under active development and is not production-ready. Features, APIs, persistence formats, and security boundaries may change before a supported release.
+
+## Documentation Index
+
+- [Documentation index](docs/README.md)
+- [Overview](docs/overview.md)
+- [Architecture](docs/architecture.md)
+- [Current status](docs/current-status.md)
+- [Roadmap](docs/roadmap.md)
+- [Development guide](docs/development.md)
+- [Configuration](docs/configuration.md)
+- [Runtime diagnostics](docs/runtime.md)
+- [Security](SECURITY.md)
+- [Contributing](CONTRIBUTING.md)
+- [Architectural decisions](docs/decisions.md)
