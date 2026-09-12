@@ -1,9 +1,12 @@
+import { useEffect, useState } from "react";
 import { Button } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
 import { StatCard } from "../components/StatCard";
 import { StatusBadge } from "../components/StatusBadge";
 import type { NavigationView } from "../types/navigation";
 import type { RuntimeSnapshot } from "../types/runtime";
+import { vmService } from "../lib/vmService";
+import type { VmDefinition } from "../types/vmConfig";
 
 interface DashboardPageProps {
   onNavigate: (view: NavigationView) => void;
@@ -12,6 +15,33 @@ interface DashboardPageProps {
 
 export function DashboardPage({ onNavigate, snapshot }: DashboardPageProps) {
   const hasActivity = snapshot.activity.length > 0;
+  const [definitions, setDefinitions] = useState<VmDefinition[]>([]);
+  const [vmLoadError, setVmLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isCurrent = true;
+    vmService
+      .listVmDefinitions()
+      .then((loadedDefinitions) => {
+        if (isCurrent) {
+          setDefinitions(loadedDefinitions);
+          setVmLoadError(null);
+        }
+      })
+      .catch(() => {
+        if (isCurrent) {
+          setVmLoadError("VM definitions are unavailable.");
+        }
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
+  const vmCount = definitions.length;
+  const stoppedCount = definitions.filter((definition) => definition.status === "stopped").length;
+  const runningCount = definitions.filter((definition) => definition.status === "running").length;
 
   return (
     <div className="dashboard">
@@ -21,8 +51,7 @@ export function DashboardPage({ onNavigate, snapshot }: DashboardPageProps) {
           <h2>Overview</h2>
           <p>
             NexoraVM is ready for the first setup steps. Configure a runtime,
-            add a virtual machine, or connect an AI provider when those
-            milestones land.
+            add a virtual machine definition, or connect an AI provider.
           </p>
         </div>
         <StatusBadge runtime={snapshot.runtime} />
@@ -36,10 +65,13 @@ export function DashboardPage({ onNavigate, snapshot }: DashboardPageProps) {
           value={snapshot.runtime.label}
         />
         <StatCard
-          detail={snapshot.virtualMachines.detail}
+          detail={
+            vmLoadError ??
+            `${stoppedCount} stopped · ${runningCount} running`
+          }
           label="Virtual machines"
-          tone={snapshot.virtualMachines.count > 0 ? "success" : "neutral"}
-          value={snapshot.virtualMachines.count.toString()}
+          tone={vmCount > 0 ? "success" : "neutral"}
+          value={vmCount.toString()}
         />
         <StatCard
           detail={snapshot.ai.detail}
@@ -108,7 +140,7 @@ export function DashboardPage({ onNavigate, snapshot }: DashboardPageProps) {
             </Button>
           </div>
           <p className="panel__note">
-            VM creation, AI inference, and storage management are planned for upcoming milestones.
+            VM definitions are persisted locally. Runtime execution and AI inference are planned for upcoming milestones.
           </p>
         </section>
       </div>

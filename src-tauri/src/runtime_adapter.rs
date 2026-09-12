@@ -1,7 +1,4 @@
-use crate::{
-    settings::CommandError,
-    vm_config::{NetworkMode, VmConfiguration},
-};
+use crate::{settings::CommandError, vm_config::VmConfiguration};
 use serde::{Deserialize, Serialize};
 
 pub trait RuntimeAdapter {
@@ -44,44 +41,7 @@ impl RuntimeAdapter for QemuRuntimeAdapter {
     }
 
     fn validate_vm_configuration(&self, config: &VmConfiguration) -> Result<(), CommandError> {
-        if config.id.trim().is_empty() {
-            return Err(CommandError::validation("id", "VM id is required."));
-        }
-
-        if config.name.trim().is_empty() {
-            return Err(CommandError::validation("name", "VM name is required."));
-        }
-
-        if config.cpu_count == 0 || config.cpu_count > 128 {
-            return Err(CommandError::validation(
-                "cpuCount",
-                "CPU count must be between 1 and 128.",
-            ));
-        }
-
-        if !(512..=262_144).contains(&config.memory_mi_b) {
-            return Err(CommandError::validation(
-                "memoryMiB",
-                "Memory must be between 512 MiB and 262144 MiB.",
-            ));
-        }
-
-        if config.disk_size_gi_b == 0 {
-            return Err(CommandError::validation(
-                "diskSizeGiB",
-                "Disk size must be greater than zero.",
-            ));
-        }
-
-        if config.iso_path.trim().is_empty() {
-            return Err(CommandError::validation("isoPath", "ISO path is required."));
-        }
-
-        match config.network_mode {
-            NetworkMode::Disabled | NetworkMode::User | NetworkMode::Bridged => {}
-        }
-
-        Ok(())
+        config.validate()
     }
 
     fn create_vm_definition(
@@ -101,6 +61,16 @@ impl RuntimeAdapter for QemuRuntimeAdapter {
     fn stop_vm(&self, _vm_id: &str) -> Result<(), CommandError> {
         Err(not_implemented("Stopping VMs is not implemented yet."))
     }
+}
+
+#[tauri::command]
+pub fn start_vm(vm_id: String) -> Result<(), CommandError> {
+    QemuRuntimeAdapter.start_vm(&vm_id)
+}
+
+#[tauri::command]
+pub fn stop_vm(vm_id: String) -> Result<(), CommandError> {
+    QemuRuntimeAdapter.stop_vm(&vm_id)
 }
 
 fn not_implemented(message: impl Into<String>) -> CommandError {

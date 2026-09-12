@@ -8,7 +8,7 @@ The current repository contains the first production-oriented desktop shell mile
 
 ## Current Status
 
-**Phase 2 - Configuration Foundation**
+**Phase 3 - Persistent VM Definitions**
 
 Implemented:
 
@@ -22,6 +22,10 @@ Implemented:
 - Persistent application settings stored as JSON in the operating system application-data directory.
 - Tauri commands for reading, saving, and resetting application settings.
 - Typed VM configuration models and an inert QEMU runtime adapter boundary for future milestones.
+- Persistent VM definitions with create, list, get, update, and delete commands.
+- A Virtual Machines management page with typed create/edit forms and deletion confirmation.
+- Separate persisted VM status values, defaulting new definitions to `stopped`.
+- Dashboard VM totals derived from persisted definitions.
 
 Not implemented yet:
 
@@ -48,6 +52,12 @@ Settings are persisted as JSON in the application-data directory chosen by the o
 The settings layer validates memory, CPU count, display mode, and basic path shape before writing data. These preferences are configuration only: NexoraVM still does not create VMs, start QEMU, spawn processes, request elevated permissions, or perform privileged virtualization operations.
 
 This milestone prepares the project for QEMU integration by establishing typed settings, typed VM configuration, structured command errors, and a runtime adapter trait. The placeholder QEMU adapter reports clear "not implemented yet" errors for future VM definition and lifecycle operations.
+
+## Virtual Machine Definitions
+
+Virtual machine definitions are persisted as JSON in the same operating-system application-data directory used for settings, in `vm-definitions.json`. Definitions can be created, edited, listed, looked up, and deleted from the Virtual Machines page. New definitions receive generated stable UUID-based identifiers and start with a `stopped` status.
+
+Start and Stop controls are intentionally unavailable because QEMU/WHPX execution, process management, and real lifecycle state are planned for a later milestone. The current status model is ready for that runtime boundary without claiming that a VM is running.
 
 ## Technology Stack
 
@@ -145,7 +155,7 @@ NexoraVM is divided into five major boundaries:
 4. AI runtime: provider abstraction, planning, tool execution, verification, and recovery.
 5. Guest integration: a controlled guest agent for communication with the VM.
 
-The current code implements the desktop shell, settings persistence, frontend service boundaries, VM configuration types, and the first runtime adapter boundary. VM runtime operations and AI runtime operations are intentionally deferred.
+The current code implements the desktop shell, settings and VM-definition persistence, frontend service boundaries, VM configuration and status types, and the first runtime adapter boundary. QEMU/WHPX execution and AI runtime operations are intentionally deferred.
 
 ## Design Principles
 
@@ -158,12 +168,10 @@ The current code implements the desktop shell, settings persistence, frontend se
 
 ## Planned Next Steps
 
-1. Add persistent settings and structured application events.
-2. Define shared domain models for VM configuration and runtime state.
-3. Add host capability detection for Windows virtualization prerequisites.
-4. Define the virtualization adapter trait before adding QEMU-specific code.
-5. Implement VM creation and lifecycle management behind the adapter.
-6. Add AI provider configuration and model selection without coupling it to VM orchestration.
+1. Add host capability detection for Windows virtualization prerequisites.
+2. Implement QEMU/WHPX lifecycle operations behind the runtime adapter.
+3. Add VM metadata, disk provisioning, and runtime state events.
+4. Add AI provider configuration and model selection without coupling it to VM orchestration.
 
 ## License
 

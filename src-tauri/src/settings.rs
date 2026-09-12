@@ -27,7 +27,23 @@ impl CommandError {
 
     pub fn storage(message: impl Into<String>) -> Self {
         Self {
-            code: "settings_storage_error",
+            code: "storage_error",
+            message: message.into(),
+            field: None,
+        }
+    }
+
+    pub fn not_found(message: impl Into<String>) -> Self {
+        Self {
+            code: "not_found",
+            message: message.into(),
+            field: None,
+        }
+    }
+
+    pub fn conflict(message: impl Into<String>) -> Self {
+        Self {
+            code: "conflict",
             message: message.into(),
             field: None,
         }

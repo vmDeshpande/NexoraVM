@@ -27,6 +27,14 @@
 - [ ] Manage VM disks and metadata
 - [ ] Expose VM state to the desktop UI
 
+## Phase 3 — Persistent VM Definitions
+
+- [x] Persist VM definitions in the application-data directory
+- [x] Create, list, get, update, and delete VM definitions
+- [x] Add typed VM lifecycle status values
+- [x] Add the Virtual Machines management flow
+- [ ] Connect lifecycle actions to QEMU/WHPX
+
 ## Phase 3 — Guest Interaction
 
 - [ ] Display guest screen

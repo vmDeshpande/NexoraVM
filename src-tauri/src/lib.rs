@@ -1,8 +1,14 @@
 pub mod runtime_adapter;
 pub mod settings;
 pub mod vm_config;
+pub mod vm_definitions;
 
+use runtime_adapter::{start_vm, stop_vm};
 use settings::{get_app_settings, reset_app_settings, save_app_settings};
+use vm_definitions::{
+    create_vm_definition, delete_vm_definition, get_vm_definition, list_vm_definitions,
+    update_vm_definition,
+};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -11,7 +17,14 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_app_settings,
             save_app_settings,
-            reset_app_settings
+            reset_app_settings,
+            list_vm_definitions,
+            get_vm_definition,
+            create_vm_definition,
+            update_vm_definition,
+            delete_vm_definition,
+            start_vm,
+            stop_vm
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

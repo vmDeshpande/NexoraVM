@@ -3,6 +3,7 @@ import { AppShell } from "./layouts/AppShell";
 import { DashboardPage } from "./pages/DashboardPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { VirtualMachinesPage } from "./pages/VirtualMachinesPage";
 import { getPageMeta } from "./lib/navigation";
 import { useRuntimeSnapshot } from "./hooks/useRuntimeSnapshot";
 import { placeholderRuntimeSnapshot } from "./features/dashboard/placeholderRuntime";
@@ -12,7 +13,7 @@ import "./App.css";
 
 const placeholderDescriptions: Record<NavigationView, string> = {
   dashboard: "Review runtime health and next setup steps.",
-  "virtual-machines": "Virtual machine creation and lifecycle controls are coming soon.",
+  "virtual-machines": "Create and manage persistent virtual machine definitions.",
   "ai-workspace": "Provider-neutral AI configuration and inference are coming soon.",
   storage: "Storage locations and disk management are coming soon.",
   settings: "Application preferences and runtime settings are coming soon.",
@@ -56,6 +57,8 @@ function App() {
     >
       {activeView === "dashboard" ? (
         <DashboardPage onNavigate={setActiveView} snapshot={snapshot} />
+      ) : activeView === "virtual-machines" ? (
+        <VirtualMachinesPage />
       ) : activeView === "settings" ? (
         <SettingsPage />
       ) : (
