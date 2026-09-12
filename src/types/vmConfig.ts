@@ -1,0 +1,18 @@
+import type { DisplayMode } from "./settings";
+
+export type OperatingSystem = "windows" | "linux" | "bsd" | "other";
+export type NetworkMode = "disabled" | "user" | "bridged";
+
+export interface VmConfiguration {
+  id: string;
+  name: string;
+  operatingSystem: OperatingSystem;
+  cpuCount: number;
+  memoryMiB: number;
+  diskSizeGiB: number;
+  isoPath: string;
+  networkMode: NetworkMode;
+  displayMode: DisplayMode;
+  secureBootEnabled: boolean;
+  tpmEnabled: boolean;
+}

@@ -8,7 +8,7 @@ The current repository contains the first production-oriented desktop shell mile
 
 ## Current Status
 
-**Phase 1 - Desktop Shell**
+**Phase 2 - Configuration Foundation**
 
 Implemented:
 
@@ -19,13 +19,35 @@ Implemented:
 - Runtime snapshot service abstraction for future Tauri commands.
 - Useful empty-state dashboard with runtime, VM, AI provider, storage, and activity sections.
 - Dark-first desktop interface with responsive behavior for smaller windows.
+- Persistent application settings stored as JSON in the operating system application-data directory.
+- Tauri commands for reading, saving, and resetting application settings.
+- Typed VM configuration models and an inert QEMU runtime adapter boundary for future milestones.
 
 Not implemented yet:
 
 - VM creation, lifecycle management, guest display, or input forwarding.
 - QEMU or WHPX integration.
 - AI model execution, local model loading, or cloud model connections.
-- Persistent settings, storage provisioning, credentials, telemetry, or analytics.
+- Storage provisioning, credentials, telemetry, or analytics.
+
+## Application Settings
+
+The Settings page currently supports:
+
+- Optional QEMU executable path.
+- Optional default VM storage path.
+- Optional default ISO path.
+- Default memory in MiB.
+- Default CPU count.
+- Preferred display mode: windowed, fullscreen, or headless.
+- Start minimized.
+- Check for updates.
+
+Settings are persisted as JSON in the application-data directory chosen by the operating system through Tauri's path API. The repository does not hardcode user-specific absolute paths.
+
+The settings layer validates memory, CPU count, display mode, and basic path shape before writing data. These preferences are configuration only: NexoraVM still does not create VMs, start QEMU, spawn processes, request elevated permissions, or perform privileged virtualization operations.
+
+This milestone prepares the project for QEMU integration by establishing typed settings, typed VM configuration, structured command errors, and a runtime adapter trait. The placeholder QEMU adapter reports clear "not implemented yet" errors for future VM definition and lifecycle operations.
 
 ## Technology Stack
 
@@ -123,7 +145,7 @@ NexoraVM is divided into five major boundaries:
 4. AI runtime: provider abstraction, planning, tool execution, verification, and recovery.
 5. Guest integration: a controlled guest agent for communication with the VM.
 
-The current code only implements the desktop shell and frontend service boundary. Native commands, VM runtime operations, and AI runtime operations are intentionally deferred.
+The current code implements the desktop shell, settings persistence, frontend service boundaries, VM configuration types, and the first runtime adapter boundary. VM runtime operations and AI runtime operations are intentionally deferred.
 
 ## Design Principles
 

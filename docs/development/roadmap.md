@@ -6,23 +6,23 @@
 - [x] Define product direction
 - [x] Define architecture boundaries
 - [x] Define initial security principles
-- [ ] Choose desktop framework
-- [ ] Choose first virtualization backend
-- [ ] Choose implementation language split
+- [x] Choose desktop framework
+- [x] Choose first virtualization backend
+- [x] Choose implementation language split
 
 ## Phase 1 — Desktop Shell
 
-- [ ] Create desktop application
-- [ ] Add application navigation
-- [ ] Add persistent settings
+- [x] Create desktop application
+- [x] Add application navigation
+- [x] Add persistent settings
 - [ ] Add structured logging
 - [ ] Add error reporting surface
 
-## Phase 2 — VM Runtime
+## Phase 2 — Configuration Foundation
 
-- [ ] Define hypervisor adapter interface
+- [x] Define hypervisor adapter interface
 - [ ] Detect host capabilities
-- [ ] Create VM configuration model
+- [x] Create VM configuration model
 - [ ] Create/start/stop/pause/delete VM
 - [ ] Manage VM disks and metadata
 - [ ] Expose VM state to the desktop UI

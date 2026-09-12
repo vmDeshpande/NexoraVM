@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AppShell } from "./layouts/AppShell";
 import { DashboardPage } from "./pages/DashboardPage";
 import { PlaceholderPage } from "./pages/PlaceholderPage";
+import { SettingsPage } from "./pages/SettingsPage";
 import { getPageMeta } from "./lib/navigation";
 import { useRuntimeSnapshot } from "./hooks/useRuntimeSnapshot";
 import { placeholderRuntimeSnapshot } from "./features/dashboard/placeholderRuntime";
@@ -55,6 +56,8 @@ function App() {
     >
       {activeView === "dashboard" ? (
         <DashboardPage onNavigate={setActiveView} snapshot={snapshot} />
+      ) : activeView === "settings" ? (
+        <SettingsPage />
       ) : (
         <PlaceholderPage
           description={placeholderDescriptions[activeView]}
