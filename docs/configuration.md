@@ -33,4 +33,4 @@ Malformed VM-definition JSON recovers to an empty list. Loaded definitions are t
 
 ## What Configuration Does Not Do
 
-Configuration does not start QEMU, create disks, enable WHPX, change networking, grant administrator privileges, run AI models, or verify that configured files exist. Those behaviors require later, separately reviewed runtime and security work.
+Configuration does not start QEMU, create disks, enable WHPX, change networking, grant administrator privileges, run AI models, or verify that configured files exist. ISO path existence and type are validated at launch time, not at definition save time. Those behaviors require later, separately reviewed runtime and security work.

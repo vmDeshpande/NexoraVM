@@ -74,6 +74,36 @@ pub fn validate_qemu_command_spec(spec: &QemuCommandSpec) -> Result<(), CommandE
     Ok(())
 }
 
+pub fn validate_iso_path_for_launch(iso_path: &str) -> Result<(), CommandError> {
+    let path = iso_path.trim();
+    if path.is_empty() {
+        return Err(CommandError::validation(
+            "isoPath",
+            "ISO path must be non-empty when launching a VM that requires an ISO.",
+        ));
+    }
+    let path = Path::new(path);
+    if !path.exists() {
+        return Err(CommandError::validation(
+            "isoPath",
+            "ISO path does not exist.",
+        ));
+    }
+    if path.is_dir() {
+        return Err(CommandError::validation(
+            "isoPath",
+            "ISO path must be a regular file, not a directory.",
+        ));
+    }
+    if !path.is_file() {
+        return Err(CommandError::validation(
+            "isoPath",
+            "ISO path must refer to a regular file.",
+        ));
+    }
+    Ok(())
+}
+
 pub fn build_qemu_command_spec(
     config: &VmConfiguration,
     status: &RuntimeStatus,
@@ -393,5 +423,39 @@ mod tests {
         let serialized = serde_json::to_string(&spec).unwrap();
         assert!(serialized.contains("arguments"));
         assert!(!serialized.contains("cmd.exe"));
+    }
+
+    #[test]
+    fn empty_iso_path_is_rejected() {
+        let error = validate_iso_path_for_launch("").unwrap_err();
+        assert_eq!(error.field, Some("isoPath"));
+        assert!(error.message.contains("non-empty"));
+    }
+
+    #[test]
+    fn whitespace_only_iso_path_is_rejected() {
+        let error = validate_iso_path_for_launch("   ").unwrap_err();
+        assert_eq!(error.field, Some("isoPath"));
+    }
+
+    #[test]
+    fn nonexistent_iso_path_is_rejected() {
+        let error = validate_iso_path_for_launch("C:\\ISOs\\does-not-exist.iso").unwrap_err();
+        assert_eq!(error.field, Some("isoPath"));
+        assert!(error.message.contains("does not exist"));
+    }
+
+    #[test]
+    fn directory_iso_path_is_rejected() {
+        let temp_dir = std::env::temp_dir();
+        let error = validate_iso_path_for_launch(temp_dir.to_string_lossy().as_ref()).unwrap_err();
+        assert_eq!(error.field, Some("isoPath"));
+        assert!(error.message.contains("directory") || error.message.contains("regular file"));
+    }
+
+    #[test]
+    fn existing_file_iso_path_is_accepted() {
+        let exe = std::env::current_exe().unwrap();
+        assert!(validate_iso_path_for_launch(exe.to_string_lossy().as_ref()).is_ok());
     }
 }

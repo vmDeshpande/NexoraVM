@@ -1,5 +1,5 @@
 use crate::{
-    qemu_command::{validate_qemu_command_spec, QemuCommandSpec},
+    qemu_command::{validate_iso_path_for_launch, validate_qemu_command_spec, QemuCommandSpec},
     runtime_adapter::{QemuRuntimeAdapter, RuntimeAdapter},
     settings::{get_app_settings, CommandError},
     vm_definitions::{get_vm_definition, list_vm_definitions},
@@ -439,6 +439,7 @@ pub fn start_vm(
     vm_id: String,
 ) -> Result<QemuProcessStatus, CommandError> {
     let definition = get_vm_definition(app.clone(), vm_id)?;
+    validate_iso_path_for_launch(&definition.configuration.iso_path)?;
     let settings = get_app_settings(app)?;
     let adapter = QemuRuntimeAdapter;
     let runtime_status = adapter.discover_capabilities(&settings)?;

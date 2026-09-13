@@ -40,11 +40,11 @@ The generator emits deterministic arguments for VM name, `q35`, CPU count, memor
 
 `QemuProcessManager` accepts only a validated `QemuCommandSpec`. It passes the executable path and every argument separately to Rust's process API, optionally applies the typed working directory, closes standard input, and captures stdout/stderr in bounded 64 KiB buffers. It never invokes a shell and is not exposed as a generic process-execution command.
 
-Live process handles are kept only in Tauri-managed memory. They are not persisted in VM definitions. Process states include `starting`, `running`, `stopping`, `stopped`, `failed`, `timed-out`, and `cancelled`. Start reports a process as running only after the child is observed alive. Immediate exits become failures, duplicate starts are rejected, and stop uses a bounded graceful-stop attempt followed by forced termination when needed.
+When `start_vm` is called, the backend resolves the persisted VM definition, validates the ISO path before launch, refreshes runtime diagnostics, builds the typed QEMU command specification, and launches QEMU through the controlled process manager. Live process handles are kept only in Tauri-managed memory. Start reports a process as running only after the child is observed alive. Immediate exits become failures, duplicate starts are rejected, and stop uses a bounded graceful-stop attempt followed by forced termination when needed.
 
 A monitor thread checks managed children at a bounded interval, records exit codes and output, and removes the live child handle after exit. It uses short mutex scopes and never adopts a process after application restart.
 
-Actual QEMU process launch is now technically enabled when runtime discovery succeeds, but this is not complete VM execution. No disk is created, no WHPX feature is enabled, and no guest display or full lifecycle synchronization is provided yet.
+Actual QEMU process launch is now enabled when runtime discovery succeeds and the ISO path exists, but this is not complete VM execution. No disk is created, no WHPX feature is enabled, and no guest display or full lifecycle synchronization is provided yet.
 
 ## WHPX and CPU Virtualization
 

@@ -22,7 +22,7 @@ The current application can launch only a validated QEMU command specification w
 | Runtime discovery | Implemented | Bounded configured-path, standard-location, and PATH lookup. |
 | QEMU detection | Partial | Regular-file validation and fixed `--version` probing; no VM launch. |
 | QEMU command preview | Implemented | Deterministic typed specification only; preview never executes QEMU. |
-| QEMU execution | Partial | Controlled validated process launch only; no complete guest runtime integration. |
+| QEMU execution | Implemented | Validated QEMU command launch with ISO path validation; no complete guest runtime integration. |
 | WHPX integration | Planned | Current Windows capability fields report `unknown`; no WHPX execution exists. |
 | VM lifecycle | Partial | In-memory process start/stop/status exists; persisted VM state remains configuration-only. |
 | Storage management | Planned | Storage preferences exist; disk creation and management do not. |
@@ -68,7 +68,7 @@ On Windows, Visual Studio Developer PowerShell may be required for the Rust MSVC
 npm install
 ```
 
-### Build and run
+### Run and build
 
 ```powershell
 npm run dev
@@ -78,6 +78,10 @@ npm run tauri build
 ```
 
 `npm run tauri build` prepares a packaged build, but NexoraVM does not yet guarantee a production-ready installer or release process.
+
+### First QEMU launch milestone
+
+NexoraVM can now launch a validated QEMU command specification from a persisted VM definition when QEMU is detected and the configured ISO path exists. Launch is limited to validated command specifications passed separately to Rust's process API; no shell is used. This milestone does not include guest display, state synchronization, disk creation, WHPX execution, networking, or AI integration.
 
 ### Rust validation
 

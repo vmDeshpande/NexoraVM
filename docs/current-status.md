@@ -10,6 +10,7 @@ NexoraVM is an early-development desktop application. This document describes th
 4. Runtime discovery and QEMU capability diagnostics.
 5. Safe typed QEMU command-spec construction and preview.
 6. Controlled QEMU process management.
+7. First real QEMU launch path with ISO path validation: persisted VM definitions can launch a validated QEMU command when QEMU is detected and the ISO path exists.
 
 ## Implemented Frontend
 
@@ -72,6 +73,7 @@ Repository validation commands are documented in [development](development.md). 
 - No guest display, input forwarding, or guest agent.
 - No AI model or inference integration.
 - No production installer or release process guarantee.
+- Start requests fail clearly when QEMU is unavailable or the configured ISO path does not exist.
 
 ## Intentionally Deferred
 

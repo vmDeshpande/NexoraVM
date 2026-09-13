@@ -9,6 +9,7 @@ NexoraVM handles virtualization configuration and controlled host processes. The
 - Runtime discovery uses fixed executable names, bounded lookup locations, and the fixed `--version` argument.
 - QEMU command previews use a typed executable path and ordered arguments; they do not expose shell strings or arbitrary flags.
 - Paths and VM resources are validated before persistence.
+- ISO paths are validated as existing regular files before QEMU launch; directories and missing paths are rejected with structured errors.
 - No administrator privileges are requested.
 - No Windows features, firewall rules, or networking are modified.
 - VM configuration is separate from observed runtime state.

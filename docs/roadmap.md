@@ -86,19 +86,17 @@ This is the canonical NexoraVM roadmap. A checked item means the repository cont
 
 **Completion criteria:** process behavior is covered by focused tests, accepts only validated command specifications, uses direct process APIs, bounds output, and cannot receive arbitrary UI command input. This milestone is complete.
 
-## Phase 7 — VM Runtime Integration — Current next milestone
+## Phase 7 — First Real QEMU VM Launch — Completed
 
-**Objective:** connect persisted definitions to real runtime state.
+**Objective:** launch a real QEMU virtual machine from a persisted definition and user-selected bootable ISO.
 
-**Deliverables:** startup, shutdown, state synchronization, console/display integration, error recovery, restart semantics, and managed-process observability.
+**Deliverables:** ISO path existence and directory validation at launch, typed QEMU command construction, controlled QEMU process launch, bounded stdout/stderr, exit code and termination reason capture, safe stop with graceful and forced fallback, and focused Rust tests.
 
-**Dependencies:** Phases 5–6 and WHPX/host capability work.
+**Security considerations:** QEMU launch is limited to validated command specifications; no shell, arbitrary arguments, disk creation, networking changes, or administrator privileges are introduced.
 
-**Security considerations:** state must reflect observed process/runtime events, not optimistic UI updates.
+**Completion criteria:** a persisted VM definition can be started and stopped through validated QEMU command construction and the in-memory process manager when QEMU and a valid ISO path are available.
 
-**Completion criteria:** supported VMs can be started and stopped with truthful state reporting.
-
-## Phase 8 — Storage and Networking — Planned
+## Phase 8 — Storage and Networking — Current next milestone
 
 **Objective:** manage guest disks, ISO assets, and network configuration.
 
