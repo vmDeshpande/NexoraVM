@@ -36,6 +36,14 @@ Milestone 5 adds `QemuCommandSpec`, which keeps the executable path separate fro
 
 The generator emits deterministic arguments for VM name, `q35`, CPU count, memory, acceleration, display, network, optional disk, and optional ISO. Disk paths are represented in a single QEMU drive argument and are rejected when they contain option-separator commas. Bridged networking is rejected as unsupported; unknown or unavailable WHPX selects the explicit `tcg` fallback. The preview is never executed and does not create or modify disk files.
 
+## Persistent Disk
+
+`DiskManager` creates and reports persistent disk images through `create_vm_disk` and `get_vm_disk_status`. The backend validates a VM definition before disk creation, uses a conservative `qcow2` default format, and accepts a default size of 64 GiB that callers can configure through VM configuration. Disk creation invokes `qemu-img create` directly, without shell execution, without arbitrary frontend arguments, and without overwriting an existing disk image. If the disk path already exists and is a regular file, `create_vm_disk` reports the disk as ready instead of overwriting it. Missing, directory, unsafe, or invalid paths return structured validation errors.
+
+## QEMU Boot Modes
+
+The QEMU command builder now takes an explicit boot mode. Install mode attaches the persistent disk and the ISO as removable media, then sets the boot order to start from removable media. Normal mode attaches only the persistent disk and sets the boot order to start from the disk. Normal boot requires an existing persistent disk; install boot requires an existing persistent disk and a non-empty ISO path. The boot mode is included in `QemuCommandSpec` and surfaced in the VM preview. Preview commands never execute QEMU or create disks.
+
 ## Controlled Process Management
 
 `QemuProcessManager` accepts only a validated `QemuCommandSpec`. It passes the executable path and every argument separately to Rust's process API, optionally applies the typed working directory, closes standard input, and captures stdout/stderr in bounded 64 KiB buffers. It never invokes a shell and is not exposed as a generic process-execution command.

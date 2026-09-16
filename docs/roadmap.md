@@ -96,29 +96,17 @@ This is the canonical NexoraVM roadmap. A checked item means the repository cont
 
 **Completion criteria:** a persisted VM definition can be started and stopped through validated QEMU command construction and the in-memory process manager when QEMU and a valid ISO path are available.
 
-## Phase 8 — Storage and Networking — Current next milestone
+## Phase 8 — Persistent VM Disk and Normal Boot Flow — Completed
 
-**Objective:** manage guest disks, ISO assets, and network configuration.
+**Objective:** make a created VM use a persistent virtual disk so that Ubuntu can be installed once and later boot from the virtual disk.
 
-**Deliverables:** virtual disk management, ISO library, network configuration, and resource validation.
+**Deliverables:** typed disk configuration, validated `qemu-img` disk creation without shell execution, installation/normal boot modes, persistent disk attachment in QEMU command construction, disk status display, and focused Rust tests for disk validation, argument construction, and boot-mode behavior.
 
-**Dependencies:** VM runtime integration and security policy.
+**Security considerations:** disk images are created with direct process invocation of `qemu-img`. Existing disk images are never overwritten automatically. Arbitrary shell execution and arbitrary executable paths are not introduced.
 
-**Security considerations:** path confinement, resource limits, explicit network policy, and no silent host sharing.
+**Completion criteria:** a persisted VM definition can have a disk created through the backend, boot from the disk in normal mode, and attach the disk plus ISO in install mode. This milestone is complete.
 
-**Completion criteria:** storage and networking workflows are validated and observable.
-
-## Phase 9 — AI Workspace — Planned
-
-**Objective:** add provider-neutral AI configuration and model interaction.
-
-**Deliverables:** model-provider abstraction, local/cloud provider support, model selection, AI workspace UI, and secure tool permissions.
-
-**Dependencies:** stable application/runtime boundaries and security policy.
-
-**Security considerations:** credentials isolation, least privilege, user visibility, and provider-specific trust boundaries.
-
-**Completion criteria:** AI configuration works without coupling model providers to VM orchestration.
+## Phase 9 — AI Workspace — Current next milestone
 
 ## Phase 10 — AI-to-VM Workflows — Planned
 

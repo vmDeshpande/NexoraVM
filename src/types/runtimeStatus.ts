@@ -33,6 +33,8 @@ export interface RuntimeStatus {
 export type QemuAcceleration = "whpx" | "tcg";
 export type QemuDisplayMode = "sdl" | "gtk-fullscreen" | "none";
 export type QemuNetworkMode = "none" | "user";
+export type QemuBootMode = "install" | "normal";
+export type DiskState = "not-created" | "ready" | "creation-failed";
 
 export interface QemuCommandSpec {
   executablePath: string;
@@ -43,6 +45,22 @@ export interface QemuCommandSpec {
   acceleration: QemuAcceleration;
   displayMode: QemuDisplayMode;
   networkMode: QemuNetworkMode;
+  bootMode: QemuBootMode;
+}
+
+export interface VmDiskStatus {
+  vmId: string;
+  state: DiskState;
+  path: string | null;
+  sizeGiB: number | null;
+  format: string | null;
+  message: string | null;
+}
+
+export interface VmStartRequest {
+  vmId: string;
+  bootMode: QemuBootMode;
+  [key: string]: unknown;
 }
 
 export type QemuProcessState =

@@ -39,6 +39,14 @@ pub struct QemuCommandSpec {
     pub acceleration: QemuAcceleration,
     pub display_mode: QemuDisplayMode,
     pub network_mode: QemuNetworkMode,
+    pub boot_mode: QemuBootMode,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum QemuBootMode {
+    Install,
+    Normal,
 }
 
 pub fn validate_qemu_command_spec(spec: &QemuCommandSpec) -> Result<(), CommandError> {
@@ -107,8 +115,9 @@ pub fn validate_iso_path_for_launch(iso_path: &str) -> Result<(), CommandError> 
 pub fn build_qemu_command_spec(
     config: &VmConfiguration,
     status: &RuntimeStatus,
+    boot_mode: &QemuBootMode,
 ) -> Result<QemuCommandSpec, CommandError> {
-    validate_command_inputs(config, status)?;
+    validate_command_inputs(config, status, boot_mode)?;
 
     let executable_path = PathBuf::from(
         status
@@ -119,6 +128,10 @@ pub fn build_qemu_command_spec(
     let acceleration = select_acceleration(status);
     let display_mode = map_display_mode(&config.display_mode)?;
     let network_mode = map_network_mode(&config.network_mode)?;
+    let boot_argument = match boot_mode {
+        QemuBootMode::Install => ("-boot", "order=d"),
+        QemuBootMode::Normal => ("-boot", "order=c"),
+    };
     let mut arguments = vec![
         "-name".to_string(),
         config.name.trim().to_string(),
@@ -134,6 +147,8 @@ pub fn build_qemu_command_spec(
         display_argument(&display_mode).to_string(),
         "-nic".to_string(),
         network_argument(&network_mode).to_string(),
+        boot_argument.0.to_string(),
+        boot_argument.1.to_string(),
     ];
 
     if let Some(disk_path) = config.disk_path.as_deref() {
@@ -142,7 +157,7 @@ pub fn build_qemu_command_spec(
             format!("file={disk_path},format=qcow2"),
         ]);
     }
-    if !config.iso_path.trim().is_empty() {
+    if matches!(boot_mode, QemuBootMode::Install) && !config.iso_path.trim().is_empty() {
         arguments.extend(["-cdrom".to_string(), config.iso_path.trim().to_string()]);
     }
 
@@ -155,12 +170,14 @@ pub fn build_qemu_command_spec(
         acceleration,
         display_mode,
         network_mode,
+        boot_mode: boot_mode.clone(),
     })
 }
 
 fn validate_command_inputs(
     config: &VmConfiguration,
     status: &RuntimeStatus,
+    boot_mode: &QemuBootMode,
 ) -> Result<(), CommandError> {
     config.validate()?;
     if !is_safe_qemu_name(&config.name) {
@@ -174,6 +191,29 @@ fn validate_command_inputs(
     }
     if !config.iso_path.trim().is_empty() {
         validate_path("isoPath", &config.iso_path, false)?;
+    }
+    match boot_mode {
+        QemuBootMode::Install => {
+            if config.iso_path.trim().is_empty() {
+                return Err(CommandError::validation(
+                    "bootMode",
+                    "Install mode requires an ISO path.",
+                ));
+            }
+        }
+        QemuBootMode::Normal => {
+            let disk_ready = config
+                .disk_path
+                .as_deref()
+                .map(Path::new)
+                .map_or(false, |path| path.is_file());
+            if !disk_ready {
+                return Err(CommandError::validation(
+                    "bootMode",
+                    "Normal boot requires an existing persistent disk path.",
+                ));
+            }
+        }
     }
     if status.availability != CapabilityState::Available {
         return Err(CommandError::runtime(
@@ -305,13 +345,40 @@ mod tests {
             cpu_count: 4,
             memory_mi_b: 8192,
             disk_size_gi_b: 64,
-            disk_path: Some("C:\\VMs\\test.qcow2".to_string()),
+            disk_path: Some(
+                std::env::current_exe()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned(),
+            ),
             iso_path: "C:\\ISOs\\linux.iso".to_string(),
             network_mode: NetworkMode::User,
             display_mode: DisplayMode::Windowed,
             secure_boot_enabled: false,
             tpm_enabled: false,
         }
+    }
+
+    fn boot_config(boot_mode: QemuBootMode) -> VmConfiguration {
+        let mut config = config();
+        if matches!(boot_mode, QemuBootMode::Install) {
+            config.iso_path = "C:\\ISOs\\linux.iso".to_string();
+            config.disk_path = Some(
+                std::env::current_exe()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned(),
+            );
+        } else {
+            config.iso_path = String::new();
+            config.disk_path = Some(
+                std::env::current_exe()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned(),
+            );
+        }
+        config
     }
 
     fn status() -> RuntimeStatus {
@@ -342,8 +409,10 @@ mod tests {
 
     #[test]
     fn arguments_are_deterministic_and_ordered() {
-        let first = build_qemu_command_spec(&config(), &test_status()).unwrap();
-        let second = build_qemu_command_spec(&config(), &test_status()).unwrap();
+        let first =
+            build_qemu_command_spec(&config(), &test_status(), &QemuBootMode::Normal).unwrap();
+        let second =
+            build_qemu_command_spec(&config(), &test_status(), &QemuBootMode::Normal).unwrap();
         assert_eq!(first, second);
         assert_eq!(
             &first.arguments[..4],
@@ -352,8 +421,49 @@ mod tests {
     }
 
     #[test]
+    fn install_mode_attaches_iso_and_disks_normally_boots_disk() {
+        let install = build_qemu_command_spec(
+            &boot_config(QemuBootMode::Install),
+            &test_status(),
+            &QemuBootMode::Install,
+        )
+        .unwrap();
+        let normal = build_qemu_command_spec(
+            &boot_config(QemuBootMode::Normal),
+            &test_status(),
+            &QemuBootMode::Normal,
+        )
+        .unwrap();
+        assert!(install
+            .arguments
+            .windows(2)
+            .any(|pair| pair == ["-boot", "order=d"]));
+        assert!(install
+            .arguments
+            .windows(2)
+            .any(|pair| pair == ["-cdrom", "C:\\ISOs\\linux.iso"]));
+        assert!(install
+            .arguments
+            .windows(2)
+            .any(|pair| pair[0] == "-drive" && pair[1].starts_with("file=")));
+        assert!(normal
+            .arguments
+            .windows(2)
+            .any(|pair| pair == ["-boot", "order=c"]));
+        assert!(!normal
+            .arguments
+            .windows(2)
+            .any(|pair| pair == ["-cdrom", "C:\\ISOs\\linux.iso"]));
+    }
+
+    #[test]
     fn cpu_memory_iso_and_disk_arguments_are_separate() {
-        let spec = build_qemu_command_spec(&config(), &test_status()).unwrap();
+        let spec = build_qemu_command_spec(
+            &boot_config(QemuBootMode::Install),
+            &test_status(),
+            &QemuBootMode::Install,
+        )
+        .unwrap();
         assert!(spec.arguments.windows(2).any(|pair| pair == ["-smp", "4"]));
         assert!(spec.arguments.windows(2).any(|pair| pair == ["-m", "8192"]));
         assert!(spec
@@ -363,18 +473,23 @@ mod tests {
         assert!(spec
             .arguments
             .iter()
-            .any(|argument| argument == "file=C:\\VMs\\test.qcow2,format=qcow2"));
+            .any(|argument| argument.starts_with("file=")));
     }
 
     #[test]
     fn display_and_network_modes_map_safely() {
-        let spec = build_qemu_command_spec(&config(), &test_status()).unwrap();
+        let spec = build_qemu_command_spec(
+            &boot_config(QemuBootMode::Normal),
+            &test_status(),
+            &QemuBootMode::Normal,
+        )
+        .unwrap();
         assert_eq!(spec.display_mode, QemuDisplayMode::Sdl);
         assert_eq!(spec.network_mode, QemuNetworkMode::User);
         let mut bridged = config();
         bridged.network_mode = NetworkMode::Bridged;
         assert_eq!(
-            build_qemu_command_spec(&bridged, &test_status())
+            build_qemu_command_spec(&bridged, &test_status(), &QemuBootMode::Normal)
                 .unwrap_err()
                 .code,
             "unsupported"
@@ -385,7 +500,12 @@ mod tests {
     fn whpx_is_selected_only_when_available() {
         let mut runtime_status = test_status();
         runtime_status.whpx.state = CapabilityState::Available;
-        let spec = build_qemu_command_spec(&config(), &runtime_status).unwrap();
+        let spec = build_qemu_command_spec(
+            &boot_config(QemuBootMode::Normal),
+            &runtime_status,
+            &QemuBootMode::Normal,
+        )
+        .unwrap();
         assert_eq!(spec.acceleration, QemuAcceleration::Whpx);
     }
 
@@ -394,7 +514,7 @@ mod tests {
         let mut invalid = config();
         invalid.name = "unsafe; name".to_string();
         assert_eq!(
-            build_qemu_command_spec(&invalid, &test_status())
+            build_qemu_command_spec(&invalid, &test_status(), &QemuBootMode::Normal)
                 .unwrap_err()
                 .field,
             Some("name")
@@ -402,7 +522,7 @@ mod tests {
         invalid.name = "Test VM".to_string();
         invalid.cpu_count = 0;
         assert_eq!(
-            build_qemu_command_spec(&invalid, &test_status())
+            build_qemu_command_spec(&invalid, &test_status(), &QemuBootMode::Normal)
                 .unwrap_err()
                 .field,
             Some("cpuCount")
@@ -410,7 +530,7 @@ mod tests {
         invalid.cpu_count = 4;
         invalid.disk_path = Some("C:\\bad|path".to_string());
         assert_eq!(
-            build_qemu_command_spec(&invalid, &test_status())
+            build_qemu_command_spec(&invalid, &test_status(), &QemuBootMode::Normal)
                 .unwrap_err()
                 .field,
             Some("diskPath")
@@ -418,8 +538,31 @@ mod tests {
     }
 
     #[test]
+    fn boot_mode_is_serialized_on_command_spec() {
+        let spec = build_qemu_command_spec(
+            &boot_config(QemuBootMode::Install),
+            &test_status(),
+            &QemuBootMode::Install,
+        )
+        .unwrap();
+        assert_eq!(spec.boot_mode, QemuBootMode::Install);
+        let spec = build_qemu_command_spec(
+            &boot_config(QemuBootMode::Normal),
+            &test_status(),
+            &QemuBootMode::Normal,
+        )
+        .unwrap();
+        assert_eq!(spec.boot_mode, QemuBootMode::Normal);
+    }
+
+    #[test]
     fn command_spec_serializes_as_executable_and_arguments() {
-        let spec = build_qemu_command_spec(&config(), &test_status()).unwrap();
+        let spec = build_qemu_command_spec(
+            &boot_config(QemuBootMode::Normal),
+            &test_status(),
+            &QemuBootMode::Normal,
+        )
+        .unwrap();
         let serialized = serde_json::to_string(&spec).unwrap();
         assert!(serialized.contains("arguments"));
         assert!(!serialized.contains("cmd.exe"));

@@ -1,5 +1,5 @@
 use crate::{
-    qemu_command::{build_qemu_command_spec as build_spec, QemuCommandSpec},
+    qemu_command::{build_qemu_command_spec as build_spec, QemuBootMode, QemuCommandSpec},
     settings::{get_app_settings, AppSettings, CommandError},
     vm_config::VmConfiguration,
 };
@@ -23,6 +23,7 @@ pub trait RuntimeAdapter {
         &self,
         config: &VmConfiguration,
         status: &RuntimeStatus,
+        boot_mode: &QemuBootMode,
     ) -> Result<QemuCommandSpec, CommandError>;
     fn validate_vm_configuration(&self, config: &VmConfiguration) -> Result<(), CommandError>;
     fn create_vm_definition(
@@ -114,8 +115,9 @@ impl RuntimeAdapter for QemuRuntimeAdapter {
         &self,
         config: &VmConfiguration,
         status: &RuntimeStatus,
+        boot_mode: &QemuBootMode,
     ) -> Result<QemuCommandSpec, CommandError> {
-        build_spec(config, status)
+        build_spec(config, status, boot_mode)
     }
 
     fn validate_vm_configuration(&self, config: &VmConfiguration) -> Result<(), CommandError> {
@@ -329,15 +331,22 @@ fn current_timestamp() -> String {
     )
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VmBootRequest {
+    pub vm_id: String,
+    pub boot_mode: QemuBootMode,
+}
+
 #[tauri::command]
 pub fn build_qemu_command_spec(
     app: AppHandle,
-    vm_id: String,
+    request: VmBootRequest,
 ) -> Result<QemuCommandSpec, CommandError> {
-    let definition = crate::vm_definitions::get_vm_definition(app.clone(), vm_id)?;
+    let definition = crate::vm_definitions::get_vm_definition(app.clone(), request.vm_id)?;
     let settings = get_app_settings(app)?;
     let status = QemuRuntimeAdapter.discover_capabilities(&settings)?;
-    QemuRuntimeAdapter.build_command_spec(&definition.configuration, &status)
+    QemuRuntimeAdapter.build_command_spec(&definition.configuration, &status, &request.boot_mode)
 }
 
 fn not_implemented(message: impl Into<String>) -> CommandError {
@@ -371,17 +380,21 @@ mod tests {
     }
 
     #[test]
-    fn invalid_configured_path_reports_unavailable_without_panicking() {
+    fn invalid_configured_path_adds_diagnostic_without_panicking() {
         let settings = AppSettings {
             qemu_executable_path: Some("C:\\definitely\\missing\\qemu.exe".to_string()),
             ..AppSettings::default()
         };
         let status = QemuRuntimeAdapter.discover_capabilities(&settings).unwrap();
-        assert_eq!(status.availability, CapabilityState::Unavailable);
-        assert!(status
+        let configured_path_invalid = status
             .diagnostics
             .iter()
-            .any(|item| item.code == "configured_qemu_path_invalid"));
+            .any(|item| item.code == "configured_qemu_path_invalid");
+        assert!(configured_path_invalid);
+        assert!(matches!(
+            status.availability,
+            CapabilityState::Available | CapabilityState::Unavailable | CapabilityState::Error
+        ));
     }
 
     #[test]

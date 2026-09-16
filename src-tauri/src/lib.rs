@@ -1,3 +1,4 @@
+pub mod disk_manager;
 pub mod process_manager;
 pub mod qemu_command;
 pub mod runtime_adapter;
@@ -5,6 +6,7 @@ pub mod settings;
 pub mod vm_config;
 pub mod vm_definitions;
 
+use disk_manager::{create_vm_disk, get_vm_disk_status};
 use process_manager::{
     get_vm_process_status, refresh_all_vm_runtime_status, start_vm, stop_vm, ProcessManagerState,
 };
@@ -29,6 +31,8 @@ pub fn run() {
             create_vm_definition,
             update_vm_definition,
             delete_vm_definition,
+            create_vm_disk,
+            get_vm_disk_status,
             start_vm,
             stop_vm,
             get_vm_process_status,

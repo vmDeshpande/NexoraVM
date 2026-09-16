@@ -21,9 +21,9 @@ Settings are stored in `settings.json`. Save validates values and paths. Reset w
 
 ## VM Definitions
 
-VM definitions are stored separately in `vm-definitions.json` and contain configuration only. New definitions receive generated UUID-based IDs. `diskPath` is optional and backward-compatible with existing definitions that do not contain it. Live process state is held only by the Rust process manager.
+VM definitions are stored separately in `vm-definitions.json` and contain typed configuration only. They do not persist process handles or runtime status. Live process state is held only by the Rust process manager.
 
-Configuration includes name, operating system, CPU count, memory, disk size, ISO path, network mode, display mode, Secure Boot, and TPM. Validation rejects empty or oversized names, invalid IDs, unsupported resource ranges, and syntactically invalid paths. An ISO file does not need to exist yet.
+Configuration includes name, operating system, CPU count, memory, disk size, disk path, ISO path, network mode, display mode, Secure Boot, and TPM. Validation rejects empty or oversized names, invalid IDs, unsupported resource ranges, syntactically invalid paths, and invalid disk sizes. ISO path existence and type are validated at launch time, not at definition save time. Disk path existence and type are validated at launch time and at disk creation time; they are not verified when a VM definition is saved. A disk size of `64` GiB is used by default when disk creation is requested, but existing disk images are never overwritten automatically. Those behaviors require later runtime validation and security review.
 
 ## Error Behavior
 

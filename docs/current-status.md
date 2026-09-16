@@ -11,6 +11,7 @@ NexoraVM is an early-development desktop application. This document describes th
 5. Safe typed QEMU command-spec construction and preview.
 6. Controlled QEMU process management.
 7. First real QEMU launch path with ISO path validation: persisted VM definitions can launch a validated QEMU command when QEMU is detected and the ISO path exists.
+8. Persistent VM disk and normal boot flow: VMs can use a persistent `qcow2` disk, disk images can be created through validated `qemu-img` invocation, and the command builder supports explicit install and normal boot modes.
 
 ## Implemented Frontend
 
@@ -38,10 +39,12 @@ Manual native-window interaction has not been represented as completed verificat
 - `build_qemu_command_spec`
 - `get_vm_process_status`
 - `refresh_all_vm_runtime_status`
+- `create_vm_disk`
+- `get_vm_disk_status`
 
 The Start/Stop commands launch or stop only a validated QEMU command specification through the in-memory process manager. They do not modify persisted VM configuration or claim a guest is running when the process is unavailable.
 
-The command-spec command returns a deterministic executable path and ordered argument list for diagnostics only. It does not launch QEMU, create disks, or change host state. Start/Stop use that same specification through controlled direct process APIs.
+`create_vm_disk` creates a `qcow2` image only for a validated VM definition, rejects existing disk images, and does not use a shell. `get_vm_disk_status` reports whether the persistent disk exists without managing processes.
 
 ## Settings and VM Definitions
 
@@ -68,12 +71,12 @@ Repository validation commands are documented in [development](development.md). 
 - No complete VM runtime integration, guest display, or lifecycle synchronization.
 - QEMU process management is limited to validated command specifications and in-memory status.
 - No WHPX execution integration or reliable Windows virtualization detection.
-- No virtual disk creation or disk management.
+- No virtual disk resizing, snapshots, or disk management beyond initial creation.
 - No complete networking configuration.
 - No guest display, input forwarding, or guest agent.
 - No AI model or inference integration.
 - No production installer or release process guarantee.
-- Start requests fail clearly when QEMU is unavailable or the configured ISO path does not exist.
+- Start requests fail clearly when QEMU is unavailable, the configured ISO path does not exist, or the persistent disk is missing.
 
 ## Intentionally Deferred
 

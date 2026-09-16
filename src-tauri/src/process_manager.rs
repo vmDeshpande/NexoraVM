@@ -1,5 +1,7 @@
 use crate::{
-    qemu_command::{validate_iso_path_for_launch, validate_qemu_command_spec, QemuCommandSpec},
+    qemu_command::{
+        validate_iso_path_for_launch, validate_qemu_command_spec, QemuBootMode, QemuCommandSpec,
+    },
     runtime_adapter::{QemuRuntimeAdapter, RuntimeAdapter},
     settings::{get_app_settings, CommandError},
     vm_definitions::{get_vm_definition, list_vm_definitions},
@@ -8,12 +10,20 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     io::{self, Read},
+    path::Path,
     process::{Child, Command, Stdio},
     sync::{Arc, Mutex},
     thread,
     time::{Duration, Instant},
 };
 use tauri::{AppHandle, State};
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VmStartRequest {
+    pub vm_id: String,
+    pub boot_mode: QemuBootMode,
+}
 
 const MAX_OUTPUT_BYTES: usize = 64 * 1024;
 const GRACEFUL_STOP_TIMEOUT: Duration = Duration::from_millis(500);
@@ -436,14 +446,55 @@ fn snapshot_entry(entry: &ProcessEntry) -> QemuProcessStatus {
 pub fn start_vm(
     app: AppHandle,
     state: State<'_, ProcessManagerState>,
-    vm_id: String,
+    request: VmStartRequest,
 ) -> Result<QemuProcessStatus, CommandError> {
-    let definition = get_vm_definition(app.clone(), vm_id)?;
-    validate_iso_path_for_launch(&definition.configuration.iso_path)?;
+    let definition = get_vm_definition(app.clone(), request.vm_id)?;
     let settings = get_app_settings(app)?;
-    let adapter = QemuRuntimeAdapter;
-    let runtime_status = adapter.discover_capabilities(&settings)?;
-    let spec = adapter.build_command_spec(&definition.configuration, &runtime_status)?;
+    match request.boot_mode {
+        QemuBootMode::Install => {
+            validate_iso_path_for_launch(&definition.configuration.iso_path)?;
+            let disk_path = definition
+                .configuration
+                .disk_path
+                .as_deref()
+                .ok_or_else(|| {
+                    CommandError::validation(
+                        "diskPath",
+                        "A persistent disk is required for install mode.",
+                    )
+                })?;
+            if !Path::new(disk_path).is_file() {
+                return Err(CommandError::validation(
+                    "diskPath",
+                    "The persistent disk must exist before install mode.",
+                ));
+            }
+        }
+        QemuBootMode::Normal => {
+            let disk_path = definition
+                .configuration
+                .disk_path
+                .as_deref()
+                .ok_or_else(|| {
+                    CommandError::validation(
+                        "diskPath",
+                        "A persistent disk is required for normal boot.",
+                    )
+                })?;
+            if !Path::new(disk_path).is_file() {
+                return Err(CommandError::validation(
+                    "diskPath",
+                    "The persistent disk must exist before normal boot.",
+                ));
+            }
+        }
+    }
+    let runtime_status = QemuRuntimeAdapter.discover_capabilities(&settings)?;
+    let spec = QemuRuntimeAdapter.build_command_spec(
+        &definition.configuration,
+        &runtime_status,
+        &request.boot_mode,
+    )?;
     state
         .manager
         .lock()
@@ -568,6 +619,7 @@ mod tests {
             acceleration: crate::qemu_command::QemuAcceleration::Tcg,
             display_mode: crate::qemu_command::QemuDisplayMode::None,
             network_mode: crate::qemu_command::QemuNetworkMode::None,
+            boot_mode: crate::qemu_command::QemuBootMode::Normal,
         }
     }
 

@@ -41,7 +41,7 @@ Rust owns validation, persistence, structured command errors, runtime discovery,
 
 ### Runtime adapter
 
-`RuntimeAdapter` defines the provider-neutral boundary for availability checks, capability discovery, VM configuration validation, future VM definition creation, and lifecycle operations. `QemuRuntimeAdapter` currently implements discovery, diagnostics, and launch readiness. `start_vm` in the process manager resolves persisted definitions, validates ISO paths before launch, builds typed command specifications through the adapter, and launches QEMU through the in-memory process manager. VM creation through the adapter and Start/Stop use explicit, validated paths.
+`RuntimeAdapter` defines the provider-neutral boundary for availability checks, capability discovery, VM configuration validation, future VM definition creation, and lifecycle operations. `QemuRuntimeAdapter` currently implements discovery, diagnostics, and launch readiness. `start_vm` in the process manager resolves persisted definitions, validates the ISO path and persistent disk before launch, builds typed command specifications through the adapter with an explicit boot mode, and launches QEMU through the in-memory process manager. `QemuRuntimeAdapter.build_command_spec` accepts install or normal boot modes. `DiskManager` validates disk configuration and creates disk images through a direct, non-shell `qemu-img` invocation. VM creation through the adapter and Start/Stop use explicit, validated paths.
 
 ### QEMU and future WHPX integration
 
