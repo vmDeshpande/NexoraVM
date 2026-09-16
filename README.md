@@ -64,6 +64,7 @@ The project is intentionally being built in layers. The current foundation cover
 | Runtime discovery | ✅ Implemented | Bounded QEMU discovery, executable validation, and fixed version probing. |
 | QEMU command construction | ✅ Implemented | Deterministic typed command specifications with no shell execution. |
 | QEMU process management | ✅ Implemented | Controlled validated process start/stop, monitoring, bounded output, and lifecycle state. |
+| QEMU boot and disk lifecycle | ✅ Implemented | Install and normal boot modes, persistent disk creation, ISO/disk validation, duplicate-start rejection, and stop cleanup. |
 | VM runtime integration | 🟡 Partial | Managed process lifecycle exists; complete guest/runtime synchronization is still being built. |
 | WHPX execution | ⏳ Planned | Windows capability fields exist, but WHPX execution is not implemented. |
 | Virtual storage | ⏳ Planned | Storage preferences exist; disk creation and management are not implemented. |
@@ -253,11 +254,13 @@ NexoraVM is being developed in explicit milestones so each boundary can be teste
 5. ✅ Safe QEMU command construction
 6. ✅ Controlled QEMU process management
 7. ✅ VM runtime-state synchronization
-8. ⏳ Guest display and console integration
-9. ⏳ Storage and networking
-10. ⏳ AI workspace and model providers
-11. ⏳ AI-assisted VM workflows
-12. ⏳ Release hardening
+8. ✅ Persistent disk and normal boot flow
+9. ✅ Persistent boot validation and lifecycle hardening
+10. ⏳ Guest display and console integration
+11. ⏳ Storage and networking
+12. ⏳ AI workspace and model providers
+13. ⏳ AI-assisted VM workflows
+14. ⏳ Release hardening
 
 The detailed and canonical roadmap is [docs/roadmap.md](docs/roadmap.md).
 

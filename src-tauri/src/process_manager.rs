@@ -687,6 +687,26 @@ mod tests {
     }
 
     #[test]
+    fn stop_for_missing_process_is_conflict() {
+        let mut manager = QemuProcessManager::with_launcher(MockLauncher::default());
+        assert_eq!(manager.stop("missing").unwrap_err().code, "conflict");
+    }
+
+    #[test]
+    fn failed_launch_does_not_leave_running_state() {
+        let mut manager = QemuProcessManager::with_launcher(MockLauncher {
+            launch_fails: true,
+            ..MockLauncher::default()
+        });
+        let error = manager.start(spec()).unwrap_err();
+        assert_eq!(error.code, "runtime_error");
+        assert!(matches!(
+            manager.status("vm-test").unwrap().state,
+            QemuProcessState::NotStarted | QemuProcessState::Failed
+        ));
+    }
+
+    #[test]
     fn immediate_exit_is_never_reported_as_running() {
         let mut manager = QemuProcessManager::with_launcher(MockLauncher {
             exits_immediately: true,

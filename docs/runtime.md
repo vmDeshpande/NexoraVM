@@ -48,11 +48,13 @@ The QEMU command builder now takes an explicit boot mode. Install mode attaches 
 
 `QemuProcessManager` accepts only a validated `QemuCommandSpec`. It passes the executable path and every argument separately to Rust's process API, optionally applies the typed working directory, closes standard input, and captures stdout/stderr in bounded 64 KiB buffers. It never invokes a shell and is not exposed as a generic process-execution command.
 
-When `start_vm` is called, the backend resolves the persisted VM definition, validates the ISO path before launch, refreshes runtime diagnostics, builds the typed QEMU command specification, and launches QEMU through the controlled process manager. Live process handles are kept only in Tauri-managed memory. Start reports a process as running only after the child is observed alive. Immediate exits become failures, duplicate starts are rejected, and stop uses a bounded graceful-stop attempt followed by forced termination when needed.
+The process manager maintains lifecycle states as `NotStarted`, `Starting`, `Running`, `Stopping`, `Stopped`, `Failed`, `TimedOut`, and `Cancelled`. Start reports a process as running only after the child is observed alive. Immediate exits become `Failed` with structured errors and do not leave stale `Running` state. Duplicate starts for an active VM are rejected. Stop uses a bounded graceful-stop attempt, falls back to forced termination when needed, cleans up the managed process handle, and reports the actual final state.
+
+When `start_vm` is called, the backend resolves the persisted VM definition, validates the ISO path, persistent disk path, and boot-mode requirements, refreshes runtime diagnostics, builds the typed QEMU command specification, and launches QEMU through the controlled process manager. Normal boot omits the ISO from the command and requires the persistent disk to exist. Live process handles are kept only in Tauri-managed memory. They are not persisted in VM definitions.
 
 A monitor thread checks managed children at a bounded interval, records exit codes and output, and removes the live child handle after exit. It uses short mutex scopes and never adopts a process after application restart.
 
-Actual QEMU process launch is now enabled when runtime discovery succeeds and the ISO path exists, but this is not complete VM execution. No disk is created, no WHPX feature is enabled, and no guest display or full lifecycle synchronization is provided yet.
+Actual QEMU process launch is now enabled for validated install and normal boot paths, but this is not complete VM execution. No disk is created by the launch path, no WHPX feature is enabled, and no guest display or full lifecycle synchronization is provided yet.
 
 ## WHPX and CPU Virtualization
 

@@ -9,10 +9,13 @@ NexoraVM handles virtualization configuration and controlled host processes. The
 - Runtime discovery uses fixed executable names, bounded lookup locations, and the fixed `--version` argument.
 - QEMU command previews use a typed executable path and ordered arguments; they do not expose shell strings or arbitrary flags.
 - Paths and VM resources are validated before persistence.
-- ISO paths are validated as existing regular files before QEMU launch; directories and missing paths are rejected with structured errors.
+- ISO paths are validated as existing regular files before install boot; directories and missing paths are rejected with structured errors.
 - Disk images are created only from validated VM definitions through direct `qemu-img` invocation; shell execution, arbitrary arguments, and arbitrary executable paths are not introduced.
 - Existing disk images are never overwritten by disk creation commands; missing or invalid disk paths return structured errors.
-- QEMU boot modes are explicit: install mode attaches disk and ISO and boots from removable media; normal mode attaches disk and boots from disk.
+- Normal boot requires an existing persistent disk and omits the ISO from the QEMU command.
+- Install boot requires an existing persistent disk and a non-empty ISO path.
+- Duplicate starts are rejected, failed launches do not leave stale running state, and stops clean up managed process handles.
+- On application restart, previously managed processes are reported as `not-started`; NexoraVM does not rediscover or adopt unrelated processes.
 - No administrator privileges are requested.
 - No Windows features, firewall rules, or networking are modified.
 - VM configuration is separate from observed runtime state.

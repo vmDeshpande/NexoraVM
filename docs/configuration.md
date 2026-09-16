@@ -23,7 +23,7 @@ Settings are stored in `settings.json`. Save validates values and paths. Reset w
 
 VM definitions are stored separately in `vm-definitions.json` and contain typed configuration only. They do not persist process handles or runtime status. Live process state is held only by the Rust process manager.
 
-Configuration includes name, operating system, CPU count, memory, disk size, disk path, ISO path, network mode, display mode, Secure Boot, and TPM. Validation rejects empty or oversized names, invalid IDs, unsupported resource ranges, syntactically invalid paths, and invalid disk sizes. ISO path existence and type are validated at launch time, not at definition save time. Disk path existence and type are validated at launch time and at disk creation time; they are not verified when a VM definition is saved. A disk size of `64` GiB is used by default when disk creation is requested, but existing disk images are never overwritten automatically. Those behaviors require later runtime validation and security review.
+Configuration includes name, operating system, CPU count, memory, disk size, disk path, ISO path, network mode, display mode, Secure Boot, and TPM. Validation rejects empty or oversized names, invalid IDs, unsupported resource ranges, syntactically invalid paths, and invalid disk sizes. ISO path existence and type are validated at launch time, not at definition save time. Disk path existence and type are validated at launch time and boot time; they are not verified when a VM definition is saved. A disk size of `64` GiB is used by default when disk creation is requested, but existing disk images are never overwritten automatically. Normal boot requires an existing persistent disk and omits the ISO. Install boot requires an existing persistent disk and a non-empty ISO path. Those behaviors require later runtime validation and security review.
 
 ## Error Behavior
 
@@ -33,4 +33,4 @@ Malformed VM-definition JSON recovers to an empty list. Loaded definitions are t
 
 ## What Configuration Does Not Do
 
-Configuration does not start QEMU, create disks, enable WHPX, change networking, grant administrator privileges, run AI models, or verify that configured files exist. ISO path existence and type are validated at launch time, not at definition save time. Those behaviors require later, separately reviewed runtime and security work.
+Configuration does not start QEMU, create disks, enable WHPX, change networking, grant administrator privileges, run AI models, or infer runtime state. ISO path existence and type are validated at launch time, and disk/boot validation happens before launch and disk creation; they are not verified when a VM definition is saved. Those behaviors require later, separately reviewed runtime and security work.

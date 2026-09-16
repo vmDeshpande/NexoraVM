@@ -10,8 +10,8 @@ NexoraVM is an early-development desktop application. This document describes th
 4. Runtime discovery and QEMU capability diagnostics.
 5. Safe typed QEMU command-spec construction and preview.
 6. Controlled QEMU process management.
-7. First real QEMU launch path with ISO path validation: persisted VM definitions can launch a validated QEMU command when QEMU is detected and the ISO path exists.
 8. Persistent VM disk and normal boot flow: VMs can use a persistent `qcow2` disk, disk images can be created through validated `qemu-img` invocation, and the command builder supports explicit install and normal boot modes.
+9. Lifecycle hardening and boot validation: Install mode requires a valid ISO and existing persistent disk; normal mode omits the ISO and requires the persistent disk. Duplicate starts are rejected, missing disk or ISO paths return structured errors, failed launches do not leave stale running state, stops clean up managed process handles, and application restarts do not claim old QEMU processes are running.
 
 ## Implemented Frontend
 
@@ -76,7 +76,7 @@ Repository validation commands are documented in [development](development.md). 
 - No guest display, input forwarding, or guest agent.
 - No AI model or inference integration.
 - No production installer or release process guarantee.
-- Start requests fail clearly when QEMU is unavailable, the configured ISO path does not exist, or the persistent disk is missing.
+- Start requests fail clearly when QEMU is unavailable, the configured ISO path does not exist, the persistent disk is missing, or a VM is already starting or running.
 
 ## Intentionally Deferred
 

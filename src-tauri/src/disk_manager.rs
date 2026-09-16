@@ -251,4 +251,15 @@ mod tests {
             .unwrap();
         assert_eq!(status.state, DiskState::NotCreated);
     }
+
+    #[test]
+    fn existing_disk_status_reports_ready() {
+        let temp_file = std::env::temp_dir().join("nexoravm-disk-status-ready.qcow2");
+        std::fs::write(&temp_file, b"qcow").unwrap();
+        let status = QemuDiskManager
+            .status(&disk_config(temp_file.to_string_lossy().as_ref()))
+            .unwrap();
+        std::fs::remove_file(&temp_file).unwrap();
+        assert_eq!(status.state, DiskState::Ready);
+    }
 }

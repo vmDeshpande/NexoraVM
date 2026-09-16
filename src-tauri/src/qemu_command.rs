@@ -569,6 +569,44 @@ mod tests {
     }
 
     #[test]
+    fn normal_boot_rejects_missing_disk() {
+        let mut no_disk = config();
+        no_disk.disk_path = None;
+        let error =
+            build_qemu_command_spec(&no_disk, &test_status(), &QemuBootMode::Normal).unwrap_err();
+        assert_eq!(error.field, Some("bootMode"));
+        assert!(error.message.contains("disk"));
+    }
+
+    #[test]
+    fn install_boot_rejects_missing_iso() {
+        let mut no_iso = config();
+        no_iso.iso_path = String::new();
+        let error =
+            build_qemu_command_spec(&no_iso, &test_status(), &QemuBootMode::Install).unwrap_err();
+        assert_eq!(error.field, Some("bootMode"));
+        assert!(error.message.contains("ISO"));
+    }
+
+    #[test]
+    fn normal_mode_omits_iso_cdrom() {
+        let spec =
+            build_qemu_command_spec(&config(), &test_status(), &QemuBootMode::Normal).unwrap();
+        assert!(!spec.arguments.iter().any(|argument| argument == "-cdrom"));
+    }
+
+    #[test]
+    fn install_mode_includes_iso_cdrom() {
+        let spec = build_qemu_command_spec(
+            &boot_config(QemuBootMode::Install),
+            &test_status(),
+            &QemuBootMode::Install,
+        )
+        .unwrap();
+        assert!(spec.arguments.iter().any(|argument| argument == "-cdrom"));
+    }
+
+    #[test]
     fn empty_iso_path_is_rejected() {
         let error = validate_iso_path_for_launch("").unwrap_err();
         assert_eq!(error.field, Some("isoPath"));
