@@ -149,6 +149,7 @@ fn validate_id(id: &str) -> Result<(), CommandError> {
         display_mode: DisplayMode::Headless,
         secure_boot_enabled: false,
         tpm_enabled: false,
+        boot_mode: crate::qemu_command::QemuBootMode::Normal,
     };
     configuration.validate().map(|_| ())
 }

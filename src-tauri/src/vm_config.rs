@@ -1,4 +1,7 @@
-use crate::settings::{CommandError, DisplayMode};
+use crate::{
+    qemu_command::QemuBootMode,
+    settings::{CommandError, DisplayMode},
+};
 use serde::{Deserialize, Serialize};
 
 const MAX_NAME_LENGTH: usize = 100;
@@ -24,6 +27,8 @@ pub struct VmConfiguration {
     pub display_mode: DisplayMode,
     pub secure_boot_enabled: bool,
     pub tpm_enabled: bool,
+    #[serde(default)]
+    pub boot_mode: QemuBootMode,
 }
 
 impl VmConfiguration {
@@ -144,7 +149,7 @@ pub enum NetworkMode {
 
 #[cfg(test)]
 mod tests {
-    use super::{NetworkMode, OperatingSystem, VmConfiguration};
+    use super::{NetworkMode, OperatingSystem, QemuBootMode, VmConfiguration};
     use crate::settings::DisplayMode;
 
     fn valid_configuration() -> VmConfiguration {
@@ -161,6 +166,7 @@ mod tests {
             display_mode: DisplayMode::Windowed,
             secure_boot_enabled: false,
             tpm_enabled: false,
+            boot_mode: QemuBootMode::Normal,
         }
     }
 

@@ -23,6 +23,7 @@ src-tauri/target/release/bundle/
 # Operating-system temporary files
 Thumbs.db
 *.tmp
+disk/
 
 # Editor directories and files
 .vscode/*

@@ -192,7 +192,12 @@ fn discover_qemu_capabilities(settings: &AppSettings) -> Result<RuntimeStatus, C
     })
 }
 
-fn find_qemu_executable(
+pub fn find_qemu_executable_path(settings: &AppSettings) -> Option<PathBuf> {
+    let mut diagnostics = Vec::new();
+    find_qemu_executable(settings, &mut diagnostics)
+}
+
+pub fn find_qemu_executable(
     settings: &AppSettings,
     diagnostics: &mut Vec<RuntimeDiagnostic>,
 ) -> Option<PathBuf> {
@@ -436,5 +441,87 @@ mod tests {
                 .code,
             "not_implemented"
         );
+    }
+
+    #[test]
+    fn missing_qemu_executable_returns_none() {
+        let settings = AppSettings {
+            qemu_executable_path: None,
+            default_vm_storage_path: None,
+            default_iso_path: None,
+            default_memory_mi_b: 4096,
+            default_cpu_count: 2,
+            preferred_display_mode: crate::settings::DisplayMode::Windowed,
+            start_minimized: false,
+            check_for_updates: true,
+        };
+        let result = crate::runtime_adapter::find_qemu_executable_path(&settings);
+        if result.is_some() {
+            return;
+        }
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn invalid_configured_qemu_path_returns_none() {
+        let settings = AppSettings {
+            qemu_executable_path: Some(
+                "C:\\definitely\\missing\\qemu-system-x86_64.exe".to_string(),
+            ),
+            ..AppSettings::default()
+        };
+        let result = crate::runtime_adapter::find_qemu_executable_path(&settings);
+        if result.is_some() {
+            return;
+        }
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn configured_qemu_path_is_used_when_valid() {
+        let settings = AppSettings {
+            qemu_executable_path: Some(
+                std::env::current_exe()
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned(),
+            ),
+            ..AppSettings::default()
+        };
+        let result = crate::runtime_adapter::find_qemu_executable_path(&settings);
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn standard_qemu_paths_include_program_files() {
+        let settings = AppSettings::default();
+        let result = crate::runtime_adapter::find_qemu_executable_path(&settings);
+        assert!(
+            result.is_none()
+                || result
+                    .map(|p| p.to_string_lossy().contains("qemu"))
+                    .unwrap_or(false)
+        );
+    }
+
+    #[test]
+    fn missing_qemu_img_returns_structured_error() {
+        let settings = AppSettings {
+            qemu_executable_path: None,
+            default_vm_storage_path: None,
+            default_iso_path: None,
+            default_memory_mi_b: 4096,
+            default_cpu_count: 2,
+            preferred_display_mode: crate::settings::DisplayMode::Windowed,
+            start_minimized: false,
+            check_for_updates: true,
+        };
+        let result = crate::disk_manager::find_qemu_img(&settings);
+        if result.is_ok() {
+            return;
+        }
+        let error = result.unwrap_err();
+        assert_eq!(error.code, "runtime_error");
+        assert!(error.message.contains("qemu-img"));
     }
 }

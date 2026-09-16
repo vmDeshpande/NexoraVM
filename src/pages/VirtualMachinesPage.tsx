@@ -3,7 +3,12 @@ import { Button } from "../components/Button";
 import { EmptyState } from "../components/EmptyState";
 import { getCommandErrorMessage } from "../lib/settingsService";
 import { vmService } from "../lib/vmService";
-import type { NetworkMode, OperatingSystem, VmConfiguration, VmDefinition } from "../types/vmConfig";
+import type {
+  NetworkMode,
+  OperatingSystem,
+  VmConfiguration,
+  VmDefinition,
+} from "../types/vmConfig";
 import type { DisplayMode } from "../types/settings";
 import type {
   QemuBootMode,
@@ -26,6 +31,7 @@ const defaultConfiguration: VmConfiguration = {
   displayMode: "windowed",
   secureBootEnabled: false,
   tpmEnabled: false,
+  bootMode: "normal",
 };
 
 const operatingSystems: readonly OperatingSystem[] = [
@@ -40,6 +46,7 @@ const displayModes: readonly DisplayMode[] = [
   "fullscreen",
   "headless",
 ];
+const bootModeOptions: readonly QemuBootMode[] = ["install", "normal"];
 
 export function VirtualMachinesPage() {
   const [definitions, setDefinitions] = useState<VmDefinition[]>([]);
@@ -58,7 +65,6 @@ export function VirtualMachinesPage() {
   >({});
   const [processActionId, setProcessActionId] = useState<string | null>(null);
   const [diskStatuses, setDiskStatuses] = useState<Record<string, VmDiskStatus>>({});
-  const [bootModes, setBootModes] = useState<Record<string, QemuBootMode>>({});
 
   const loadDefinitions = async () => {
     try {
@@ -70,7 +76,9 @@ export function VirtualMachinesPage() {
       );
       setError(null);
     } catch (loadError) {
-      setError(getCommandErrorMessage(loadError));
+      setError(
+        getCommandErrorMessage(loadError, "Loading virtual machines"),
+      );
     } finally {
       setLoading(false);
     }
@@ -136,10 +144,6 @@ export function VirtualMachinesPage() {
       } else {
         await vmService.createVmDefinition(configuration);
         setFeedback("Virtual machine created.");
-        setBootModes((current) => ({
-          ...current,
-          [configuration.id]: "normal",
-        }));
         if (configuration.diskPath) {
           try {
             await vmService.createVmDisk(configuration.id);
@@ -152,7 +156,9 @@ export function VirtualMachinesPage() {
       await loadDefinitions();
       await loadDiskStatuses();
     } catch (saveError) {
-      setError(getCommandErrorMessage(saveError));
+      setError(
+        getCommandErrorMessage(saveError, "Saving virtual machine"),
+      );
     } finally {
       setSaving(false);
     }
@@ -170,7 +176,9 @@ export function VirtualMachinesPage() {
         setFeedback("Disk created.");
       }
     } catch (createError) {
-      setError(getCommandErrorMessage(createError));
+      setError(
+        getCommandErrorMessage(createError, "Creating disk"),
+      );
     } finally {
       setProcessActionId(null);
     }
@@ -186,7 +194,12 @@ export function VirtualMachinesPage() {
         setFeedback(`Installing from ISO: ${status.state}`);
       }
     } catch (startError) {
-      setError(getCommandErrorMessage(startError));
+      setError(
+        getCommandErrorMessage(
+          startError,
+          `Starting VM ${vmId} in ${bootMode} mode`,
+        ),
+      );
       await refreshProcessStatus(vmId);
     } finally {
       setProcessActionId(null);
@@ -200,14 +213,15 @@ export function VirtualMachinesPage() {
     try {
       setPreview(await vmService.buildQemuCommandSpec({ vmId, bootMode }));
     } catch (previewError) {
-      setError(getCommandErrorMessage(previewError));
+      setError(
+        getCommandErrorMessage(
+          previewError,
+          `Previewing QEMU command for ${vmId}`,
+        ),
+      );
     } finally {
       setPreviewingId(null);
     }
-  };
-
-  const setBootMode = (vmId: string, mode: QemuBootMode) => {
-    setBootModes((current) => ({ ...current, [vmId]: mode }));
   };
 
   const deleteDefinition = async (definition: VmDefinition) => {
@@ -231,23 +245,31 @@ export function VirtualMachinesPage() {
         return next;
       });
     } catch (deleteError) {
-      setError(getCommandErrorMessage(deleteError));
+      setError(
+        getCommandErrorMessage(deleteError, "Deleting virtual machine"),
+      );
     } finally {
       setDeletingId(null);
     }
   };
 
   const startProcess = async (vmId: string) => {
+    const definition = definitions.find(
+      (d) => d.configuration.id === vmId,
+    );
+    const bootMode = definition?.configuration.bootMode ?? "normal";
     setProcessActionId(vmId);
     setError(null);
     try {
       const status = await vmService.startVm({
         vmId,
-        bootMode: bootModes[vmId] ?? "normal",
+        bootMode,
       });
       setProcessStatuses((current) => ({ ...current, [vmId]: status }));
     } catch (startError) {
-      setError(getCommandErrorMessage(startError));
+      setError(
+        getCommandErrorMessage(startError, `Starting VM ${vmId}`),
+      );
       await refreshProcessStatus(vmId);
     } finally {
       setProcessActionId(null);
@@ -261,7 +283,9 @@ export function VirtualMachinesPage() {
       const status = await vmService.stopVm(vmId);
       setProcessStatuses((current) => ({ ...current, [vmId]: status }));
     } catch (stopError) {
-      setError(getCommandErrorMessage(stopError));
+      setError(
+        getCommandErrorMessage(stopError, `Stopping VM ${vmId}`),
+      );
       await refreshProcessStatus(vmId);
     } finally {
       setProcessActionId(null);
@@ -334,7 +358,7 @@ export function VirtualMachinesPage() {
       ) : (
         <div className="vm-list">
           {definitions.map((definition) => {
-            const bootMode = bootModes[definition.configuration.id] ?? "normal";
+            const bootMode = definition.configuration.bootMode;
             return (
               <VmCard
                 key={definition.configuration.id}
@@ -358,7 +382,6 @@ export function VirtualMachinesPage() {
                   }
                 }
                 onInstall={() => {
-                  setBootMode(definition.configuration.id, "install");
                   void startInBootMode(definition.configuration.id, "install");
                 }}
                 onStart={() => void startProcess(definition.configuration.id)}
@@ -481,6 +504,13 @@ function VmDefinitionForm({
           onChange={(value) => update("displayMode", value as DisplayMode)}
           options={displayModes}
           value={configuration.displayMode}
+        />
+        <SelectField
+          disabled={disabled}
+          label="Boot mode"
+          onChange={(value) => update("bootMode", value as QemuBootMode)}
+          options={bootModeOptions}
+          value={configuration.bootMode}
         />
       </div>
       <div className="settings-toggles">
@@ -624,6 +654,12 @@ function VmCard({
   const { configuration } = definition;
   const diskLabel = diskStatus ? formatDiskState(diskStatus) : "Disk status unavailable";
   const bootLabel = bootMode === "install" ? "Installation" : "Normal boot";
+  const diskReady = diskStatus?.state === "ready";
+  const isoReady = configuration.isoPath.trim().length > 0;
+  const installValidation = bootMode === "install" ? getInstallValidation(diskReady, isoReady) : null;
+  const startDisabled = disabled || processAction || bootMode !== "normal" || !diskReady || !canStart(processStatus.state);
+  const installDisabled = disabled || processAction || bootMode !== "install" || !diskReady || !isoReady || !canStart(processStatus.state);
+  const validationError = installValidation?.error ?? null;
   return (
     <article className="vm-card">
       <div className="vm-card__header">
@@ -676,18 +712,19 @@ function VmCard({
             : ""}
         </p>
       ) : null}
+      {validationError ? (
+        <p className="vm-card__note vm-card__error">{validationError}</p>
+      ) : null}
       <div className="vm-card__actions">
         <Button
-          disabled={disabled || processAction || !canStart(processStatus.state)}
+          disabled={startDisabled}
           onClick={onStart}
           variant="ghost"
         >
           {processAction && processStatus.state === "starting" ? "Starting" : "Start"}
         </Button>
         <Button
-          disabled={
-            disabled || processAction || processStatus.state !== "running"
-          }
+          disabled={installDisabled}
           onClick={onInstall}
           variant="ghost"
         >
@@ -720,6 +757,28 @@ function VmCard({
 
 function formatDiskState(status: VmDiskStatus) {
   return formatLabel(status.state);
+}
+
+function getInstallValidation(
+  diskReady: boolean,
+  isoReady: boolean,
+): { valid: boolean; error: string | null } {
+  if (diskReady && isoReady) {
+    return { valid: true, error: null };
+  }
+  if (!diskReady && !isoReady) {
+    return {
+      valid: false,
+      error: "Installation requires a persistent disk and an ISO file.",
+    };
+  }
+  if (!diskReady) {
+    return {
+      valid: false,
+      error: "Installation requires a persistent disk.",
+    };
+  }
+  return { valid: false, error: "Installation requires an ISO file." };
 }
 
 function formatLabel(value: string) {

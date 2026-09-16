@@ -36,7 +36,7 @@ export const vmService: VmService = {
   deleteVmDefinition: (vmId) => invoke<void>("delete_vm_definition", { vmId }),
   createVmDisk: (vmId) => invoke<VmDiskStatus>("create_vm_disk", { vmId }),
   getVmDiskStatus: (vmId) => invoke<VmDiskStatus>("get_vm_disk_status", { vmId }),
-  startVm: (request) => invoke<QemuProcessStatus>("start_vm", request),
+  startVm: (request) => invoke<QemuProcessStatus>("start_vm", { request }),
   stopVm: (vmId) => invoke<QemuProcessStatus>("stop_vm", { vmId }),
   getVmProcessStatus: (vmId) =>
     invoke<QemuProcessStatus>("get_vm_process_status", { vmId }),

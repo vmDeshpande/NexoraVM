@@ -119,7 +119,7 @@ fn disk_path_or_error(config: &VmConfiguration) -> Result<PathBuf, CommandError>
     Ok(path)
 }
 
-fn find_qemu_img(settings: &AppSettings) -> Result<PathBuf, CommandError> {
+pub fn find_qemu_img(settings: &AppSettings) -> Result<PathBuf, CommandError> {
     if let Some(qemu_path) = settings.qemu_executable_path.as_deref() {
         let qemu_path = PathBuf::from(qemu_path.trim());
         if let Some(parent) = qemu_path.parent() {
@@ -203,6 +203,7 @@ mod tests {
             display_mode: crate::settings::DisplayMode::Windowed,
             secure_boot_enabled: false,
             tpm_enabled: false,
+            boot_mode: crate::qemu_command::QemuBootMode::Normal,
         }
     }
 

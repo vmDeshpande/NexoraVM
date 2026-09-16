@@ -49,6 +49,12 @@ pub enum QemuBootMode {
     Normal,
 }
 
+impl Default for QemuBootMode {
+    fn default() -> Self {
+        QemuBootMode::Normal
+    }
+}
+
 pub fn validate_qemu_command_spec(spec: &QemuCommandSpec) -> Result<(), CommandError> {
     if spec.executable_path.as_os_str().is_empty() || !spec.executable_path.is_file() {
         return Err(CommandError::validation(
@@ -356,6 +362,7 @@ mod tests {
             display_mode: DisplayMode::Windowed,
             secure_boot_enabled: false,
             tpm_enabled: false,
+            boot_mode: QemuBootMode::Normal,
         }
     }
 

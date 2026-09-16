@@ -1,5 +1,7 @@
 import type { DisplayMode } from "./settings";
 
+import type { QemuBootMode } from "./runtimeStatus";
+
 export type OperatingSystem = "windows" | "linux" | "bsd" | "other";
 export type NetworkMode = "disabled" | "user" | "bridged";
 export interface VmConfiguration {
@@ -15,6 +17,7 @@ export interface VmConfiguration {
   displayMode: DisplayMode;
   secureBootEnabled: boolean;
   tpmEnabled: boolean;
+  bootMode: QemuBootMode;
 }
 
 export interface VmDefinition {

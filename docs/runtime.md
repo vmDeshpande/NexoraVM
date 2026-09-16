@@ -42,7 +42,7 @@ The generator emits deterministic arguments for VM name, `q35`, CPU count, memor
 
 ## QEMU Boot Modes
 
-The QEMU command builder now takes an explicit boot mode. Install mode attaches the persistent disk and the ISO as removable media, then sets the boot order to start from removable media. Normal mode attaches only the persistent disk and sets the boot order to start from the disk. Normal boot requires an existing persistent disk; install boot requires an existing persistent disk and a non-empty ISO path. The boot mode is included in `QemuCommandSpec` and surfaced in the VM preview. Preview commands never execute QEMU or create disks.
+The boot mode is persisted as part of each VM configuration and serialized with the VM definition. The VM edit form exposes Install and Normal options; the VM card displays the persisted boot mode. Install mode attaches the persistent disk and the ISO as removable media, then sets the boot order to start from removable media. Normal mode attaches only the persistent disk and sets the boot order to start from the disk. Normal boot requires an existing persistent disk; install boot requires an existing persistent disk and a non-empty ISO path. The boot mode is included in `QemuCommandSpec` and surfaced in the VM preview. Preview commands never execute QEMU or create disks.
 
 ## Controlled Process Management
 

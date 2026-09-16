@@ -44,7 +44,9 @@ export function SettingsPage() {
       })
       .catch((loadError: unknown) => {
         if (isCurrent) {
-          setError(getCommandErrorMessage(loadError));
+          setError(
+            getCommandErrorMessage(loadError, "Loading settings"),
+          );
         }
       })
       .finally(() => {
@@ -80,7 +82,9 @@ export function SettingsPage() {
       setSettings(savedSettings);
       setFeedback("Settings saved.");
     } catch (saveError) {
-      setError(getCommandErrorMessage(saveError));
+      setError(
+        getCommandErrorMessage(saveError, "Saving settings"),
+      );
     } finally {
       setSaving(false);
     }
