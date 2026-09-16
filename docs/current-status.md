@@ -1,4 +1,4 @@
-# Current Status
+﻿# Current Status
 
 NexoraVM is an early-development desktop application. This document describes the implementation that exists in the repository; planned behavior is listed separately as deferred work.
 
@@ -10,6 +10,7 @@ NexoraVM is an early-development desktop application. This document describes th
 4. Runtime discovery and QEMU capability diagnostics.
 5. Safe typed QEMU command-spec construction and preview.
 6. Controlled QEMU process management.
+7. VM runtime-state synchronization
 8. Persistent VM disk and normal boot flow: VMs can use a persistent `qcow2` disk, disk images can be created through validated `qemu-img` invocation, and the command builder supports explicit install and normal boot modes.
 9. Lifecycle hardening and boot validation: Install mode requires a valid ISO and existing persistent disk; normal mode omits the ISO and requires the persistent disk. Duplicate starts are rejected, missing disk or ISO paths return structured errors, failed launches do not leave stale running state, stops clean up managed process handles, and application restarts do not claim old QEMU processes are running.
 

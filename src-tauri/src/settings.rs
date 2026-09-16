@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+﻿use serde::{Deserialize, Serialize};
 use std::{fs, io, path::PathBuf};
 use tauri::{AppHandle, Manager};
 
@@ -232,7 +232,7 @@ fn parse_settings_or_default(content: &str) -> AppSettings {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_settings_or_default, AppSettings};
+    use super::{parse_settings_or_default, AppSettings, CommandError};
 
     #[test]
     fn malformed_settings_recover_to_defaults() {
@@ -259,5 +259,49 @@ mod tests {
             parse_settings_or_default(invalid_settings),
             AppSettings::default()
         );
+    }
+
+    #[test]
+    fn command_error_serializes_for_frontend() {
+        let error = CommandError::validation("diskPath", "The persistent disk must exist.");
+        let serialized = serde_json::to_string(&error).unwrap();
+        assert!(serialized.contains("\"code\""));
+        assert!(serialized.contains("\"message\""));
+        assert!(serialized.contains("\"field\""));
+        assert!(serialized.contains("diskPath"));
+        assert!(serialized.contains("persistent disk"));
+        let deserialized: serde_json::Value = serde_json::from_str(&serialized).unwrap();
+        assert!(deserialized["code"].is_string());
+        assert!(deserialized["message"].is_string());
+        assert!(deserialized["field"].is_string() || deserialized["field"].is_null());
+    }
+
+    #[test]
+    fn command_error_codes_and_messages_match_frontend_contract() {
+        let variants: Vec<CommandError> = vec![
+            CommandError::validation("id", "VM id is required."),
+            CommandError::storage("Settings file could not be read."),
+            CommandError::not_found("The requested VM definition was not found."),
+            CommandError::conflict("A QEMU process is already active for this VM."),
+            CommandError::runtime("QEMU could not be started: access denied."),
+            CommandError::unsupported("WHPX is not supported."),
+        ];
+        for error in variants {
+            let serialized = serde_json::to_string(&error).unwrap();
+            let deserialized: serde_json::Value = serde_json::from_str(&serialized).unwrap();
+            assert!(
+                deserialized["code"].is_string(),
+                "code must be a string for: {serialized}"
+            );
+            assert!(
+                deserialized["message"].is_string(),
+                "message must be a string for: {serialized}"
+            );
+            let field = &deserialized["field"];
+            assert!(
+                field.is_string() || field.is_null(),
+                "field must be string or null for: {serialized}"
+            );
+        }
     }
 }

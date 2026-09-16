@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import type { VmConfiguration, VmDefinition } from "../types/vmConfig";
 import type {
   QemuBootMode,
@@ -6,6 +7,7 @@ import type {
   QemuProcessStatus,
   VmDiskStatus,
   VmStartRequest,
+  VmProcessStatusEvent,
 } from "../types/runtimeStatus";
 
 export interface VmService {
@@ -24,6 +26,9 @@ export interface VmService {
     vmId: string;
     bootMode: QemuBootMode;
   }) => Promise<QemuCommandSpec>;
+  onVmProcessStatus: (
+    handler: (event: VmProcessStatusEvent) => void,
+  ) => Promise<() => void>;
 }
 
 export const vmService: VmService = {
@@ -43,4 +48,10 @@ export const vmService: VmService = {
   refreshAllVmProcessStatuses: () =>
     invoke<QemuProcessStatus[]>("refresh_all_vm_runtime_status"),
   buildQemuCommandSpec: (request) => invoke<QemuCommandSpec>("build_qemu_command_spec", request),
+  onVmProcessStatus: async (handler) => {
+    const unlisten = await listen<VmProcessStatusEvent>("vm-process-status", (event) => {
+      handler(event.payload);
+    });
+    return unlisten;
+  },
 };

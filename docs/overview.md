@@ -26,9 +26,9 @@ The project is deliberately building the configuration and safety boundaries bef
 
 ## Current Maturity
 
-NexoraVM is in active early development. The desktop shell, settings persistence, VM definition persistence, typed configuration models, and runtime discovery diagnostics exist today. Real VM execution does not.
+NexoraVM is in active early development. The desktop shell, settings persistence, VM definition persistence, typed configuration models, runtime discovery diagnostics, QEMU command construction, and controlled QEMU process management exist today. Complete guest runtime integration, display, networking, and AI workflows do not.
 
-The current application does not start or stop QEMU, create virtual disks, integrate WHPX execution, manage networking, run AI models, or provide a production installer. Runtime status values are not evidence that a guest is running; newly created definitions default to `stopped`, and Start/Stop remain unavailable placeholders.
+The current application can construct validated QEMU command specifications, start and stop QEMU processes through those specifications, manage their lifecycle and output, create persistent virtual disks, and validate boot prerequisites (ISO paths, disk existence, boot mode rules). It does not yet integrate WHPX execution, configure VM networking, run AI models, or provide a production installer. Runtime status values reflect managed process state, not guest operation; newly created definitions default to `stopped`, and Start/Stop are gated by validated disk and ISO prerequisites.
 
 ## Current Versus Future
 

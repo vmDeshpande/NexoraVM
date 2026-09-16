@@ -1,4 +1,4 @@
-# Architecture
+﻿# Architecture
 
 NexoraVM keeps the web interface, native application boundary, persistence, and virtualization provider boundary separate. The goal is to make future runtime and AI work explicit rather than allowing provider-specific process details to spread through the UI.
 
@@ -19,7 +19,8 @@ Rust application core
   | runtime adapter boundary
         |
         +--> QEMU discovery and diagnostics (implemented)
-        +--> QEMU/WHPX execution (planned)
+        +--> QEMU execution, process management, and disk lifecycle (implemented)
+        +--> WHPX execution (planned)
         +--> AI runtime and policy boundary (planned)
 ```
 

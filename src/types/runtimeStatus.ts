@@ -95,3 +95,8 @@ export interface QemuProcessStatus {
   terminationReason: QemuTerminationReason | null;
   output: QemuProcessOutput;
 }
+
+export interface VmProcessStatusEvent {
+  vmId: string;
+  status: QemuProcessStatus;
+}

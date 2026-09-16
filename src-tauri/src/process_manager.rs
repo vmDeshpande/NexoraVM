@@ -1,4 +1,4 @@
-use crate::{
+﻿use crate::{
     qemu_command::{
         validate_iso_path_for_launch, validate_qemu_command_spec, QemuBootMode, QemuCommandSpec,
     },
@@ -16,7 +16,14 @@ use std::{
     thread,
     time::{Duration, Instant},
 };
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VmProcessStatusEvent {
+    pub vm_id: String,
+    pub status: QemuProcessStatus,
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -194,6 +201,7 @@ fn start_bounded_reader<R: Read + Send + 'static>(mut reader: R) -> Arc<Mutex<Bo
 struct ProcessEntry {
     status: QemuProcessStatus,
     child: Option<Box<dyn ManagedChild>>,
+    app: Option<AppHandle>,
 }
 
 struct QemuProcessManager<L: ProcessLauncher = ActualProcessLauncher> {
@@ -219,7 +227,11 @@ impl<L: ProcessLauncher> QemuProcessManager<L> {
         }
     }
 
-    fn start(&mut self, spec: QemuCommandSpec) -> Result<QemuProcessStatus, CommandError> {
+    fn start(
+        &mut self,
+        spec: QemuCommandSpec,
+        app: Option<AppHandle>,
+    ) -> Result<QemuProcessStatus, CommandError> {
         validate_qemu_command_spec(&spec)?;
         if let Some(entry) = self.processes.get(&spec.vm_id) {
             let entry = entry
@@ -251,6 +263,7 @@ impl<L: ProcessLauncher> QemuProcessManager<L> {
                 output: QemuProcessOutput::default(),
             },
             child: Some(child),
+            app,
         };
         if let Some(active_child) = entry.child.as_mut() {
             match active_child.try_wait() {
@@ -304,7 +317,11 @@ impl<L: ProcessLauncher> QemuProcessManager<L> {
         Ok(snapshot_entry(&entry))
     }
 
-    fn stop(&mut self, vm_id: &str) -> Result<QemuProcessStatus, CommandError> {
+    fn stop(
+        &mut self,
+        vm_id: &str,
+        app: Option<AppHandle>,
+    ) -> Result<QemuProcessStatus, CommandError> {
         let Some(entry) = self.processes.get(vm_id).cloned() else {
             return Err(CommandError::conflict("The VM is not running."));
         };
@@ -329,6 +346,13 @@ impl<L: ProcessLauncher> QemuProcessManager<L> {
             if let Some(child) = entry.child.as_mut() {
                 let _ = child.request_graceful_stop();
             }
+            if let Some(app) = &app {
+                let event = VmProcessStatusEvent {
+                    vm_id: entry.status.vm_id.clone(),
+                    status: entry.status.clone(),
+                };
+                let _ = app.emit("vm-process-status", event);
+            }
         }
 
         let deadline = Instant::now() + GRACEFUL_STOP_TIMEOUT;
@@ -336,6 +360,14 @@ impl<L: ProcessLauncher> QemuProcessManager<L> {
             if let Ok(mut entry) = entry.lock() {
                 refresh_entry(&mut entry);
                 if entry.child.is_none() {
+                    let status = snapshot_entry(&entry);
+                    if let Some(app) = &entry.app {
+                        let event = VmProcessStatusEvent {
+                            vm_id: status.vm_id.clone(),
+                            status,
+                        };
+                        let _ = app.emit("vm-process-status", event);
+                    }
                     return Ok(snapshot_entry(&entry));
                 }
             }
@@ -349,6 +381,14 @@ impl<L: ProcessLauncher> QemuProcessManager<L> {
             if child.kill().is_err() {
                 guard.status.state = QemuProcessState::TimedOut;
                 guard.status.termination_reason = Some(QemuTerminationReason::TimedOut);
+                let status = snapshot_entry(&guard);
+                if let Some(app) = &guard.app {
+                    let event = VmProcessStatusEvent {
+                        vm_id: status.vm_id.clone(),
+                        status,
+                    };
+                    let _ = app.emit("vm-process-status", event);
+                }
                 return Ok(snapshot_entry(&guard));
             }
         }
@@ -360,6 +400,14 @@ impl<L: ProcessLauncher> QemuProcessManager<L> {
             if let Ok(mut guard) = entry.lock() {
                 refresh_entry(&mut guard);
                 if guard.child.is_none() {
+                    let status = snapshot_entry(&guard);
+                    if let Some(app) = &guard.app {
+                        let event = VmProcessStatusEvent {
+                            vm_id: status.vm_id.clone(),
+                            status,
+                        };
+                        let _ = app.emit("vm-process-status", event);
+                    }
                     return Ok(snapshot_entry(&guard));
                 }
             }
@@ -370,18 +418,37 @@ impl<L: ProcessLauncher> QemuProcessManager<L> {
             .map_err(|_| CommandError::runtime("The QEMU process state is unavailable."))?;
         guard.status.state = QemuProcessState::TimedOut;
         guard.status.termination_reason = Some(QemuTerminationReason::TimedOut);
-        Ok(snapshot_entry(&guard))
+        let status = snapshot_entry(&guard);
+        if let Some(app) = &guard.app {
+            let event = VmProcessStatusEvent {
+                vm_id: status.vm_id.clone(),
+                status: status.clone(),
+            };
+            let _ = app.emit("vm-process-status", event);
+        }
+        Ok(status)
     }
 }
 
 fn spawn_process_monitor(entry: Arc<Mutex<ProcessEntry>>) {
+    let mut last_state = None;
     thread::spawn(move || loop {
-        let should_stop = match entry.lock() {
-            Ok(mut entry) => {
-                refresh_entry(&mut entry);
-                entry.child.is_none()
+        let should_stop = {
+            let mut entry = entry.lock().unwrap();
+            refresh_entry(&mut entry);
+            let current_state = entry.status.state.clone();
+            let changed = Some(&current_state) != last_state.as_ref();
+            if changed {
+                last_state = Some(current_state.clone());
+                if let Some(app) = &entry.app {
+                    let event = VmProcessStatusEvent {
+                        vm_id: entry.status.vm_id.clone(),
+                        status: entry.status.clone(),
+                    };
+                    let _ = app.emit("vm-process-status", event);
+                }
             }
-            Err(_) => true,
+            entry.child.is_none()
         };
         if should_stop {
             break;
@@ -449,7 +516,7 @@ pub fn start_vm(
     request: VmStartRequest,
 ) -> Result<QemuProcessStatus, CommandError> {
     let definition = get_vm_definition(app.clone(), request.vm_id)?;
-    let settings = get_app_settings(app)?;
+    let settings = get_app_settings(app.clone())?;
     match request.boot_mode {
         QemuBootMode::Install => {
             validate_iso_path_for_launch(&definition.configuration.iso_path)?;
@@ -495,11 +562,19 @@ pub fn start_vm(
         &runtime_status,
         &request.boot_mode,
     )?;
-    state
+    let mut manager = state
         .manager
         .lock()
-        .map_err(|_| CommandError::runtime("The QEMU process manager is unavailable."))?
-        .start(spec)
+        .map_err(|_| CommandError::runtime("The QEMU process manager is unavailable."))?;
+    let result = manager.start(spec, Some(app.clone()));
+    if let Ok(ref status) = result {
+        let event = VmProcessStatusEvent {
+            vm_id: status.vm_id.clone(),
+            status: status.clone(),
+        };
+        let _ = app.emit("vm-process-status", event);
+    }
+    result
 }
 
 #[tauri::command]
@@ -508,12 +583,12 @@ pub fn stop_vm(
     state: State<'_, ProcessManagerState>,
     vm_id: String,
 ) -> Result<QemuProcessStatus, CommandError> {
-    get_vm_definition(app, vm_id.clone())?;
-    state
+    get_vm_definition(app.clone(), vm_id.clone())?;
+    let mut manager = state
         .manager
         .lock()
-        .map_err(|_| CommandError::runtime("The QEMU process manager is unavailable."))?
-        .stop(&vm_id)
+        .map_err(|_| CommandError::runtime("The QEMU process manager is unavailable."))?;
+    manager.stop(&vm_id, Some(app.clone()))
 }
 
 #[tauri::command]
@@ -627,23 +702,23 @@ mod tests {
     fn start_transitions_to_running_and_duplicate_start_is_rejected() {
         let mut manager = QemuProcessManager::with_launcher(MockLauncher::default());
         assert_eq!(
-            manager.start(spec()).unwrap().state,
+            manager.start(spec(), None).unwrap().state,
             QemuProcessState::Running
         );
-        assert_eq!(manager.start(spec()).unwrap_err().code, "conflict");
+        assert_eq!(manager.start(spec(), None).unwrap_err().code, "conflict");
     }
 
     #[test]
     fn stop_transitions_to_stopped_and_cleans_handle() {
         let mut manager = QemuProcessManager::with_launcher(MockLauncher::default());
-        manager.start(spec()).unwrap();
-        let stopped = manager.stop("vm-test").unwrap();
+        manager.start(spec(), None).unwrap();
+        let stopped = manager.stop("vm-test", None).unwrap();
         assert_eq!(stopped.state, QemuProcessState::Stopped);
         assert_eq!(
             manager.status("vm-test").unwrap().state,
             QemuProcessState::Stopped
         );
-        assert_eq!(manager.stop("vm-test").unwrap_err().code, "conflict");
+        assert_eq!(manager.stop("vm-test", None).unwrap_err().code, "conflict");
     }
 
     #[test]
@@ -652,12 +727,15 @@ mod tests {
         let mut invalid = spec();
         invalid.executable_path = PathBuf::new();
         assert_eq!(
-            manager.start(invalid).unwrap_err().field,
+            manager.start(invalid, None).unwrap_err().field,
             Some("executablePath")
         );
         let mut empty = spec();
         empty.arguments.clear();
-        assert_eq!(manager.start(empty).unwrap_err().field, Some("arguments"));
+        assert_eq!(
+            manager.start(empty, None).unwrap_err().field,
+            Some("arguments")
+        );
     }
 
     #[test]
@@ -682,14 +760,14 @@ mod tests {
             launch_fails: true,
             ..MockLauncher::default()
         });
-        let error = manager.start(spec()).unwrap_err();
+        let error = manager.start(spec(), None).unwrap_err();
         assert_eq!(error.code, "runtime_error");
     }
 
     #[test]
     fn stop_for_missing_process_is_conflict() {
         let mut manager = QemuProcessManager::with_launcher(MockLauncher::default());
-        assert_eq!(manager.stop("missing").unwrap_err().code, "conflict");
+        assert_eq!(manager.stop("missing", None).unwrap_err().code, "conflict");
     }
 
     #[test]
@@ -698,7 +776,7 @@ mod tests {
             launch_fails: true,
             ..MockLauncher::default()
         });
-        let error = manager.start(spec()).unwrap_err();
+        let error = manager.start(spec(), None).unwrap_err();
         assert_eq!(error.code, "runtime_error");
         assert!(matches!(
             manager.status("vm-test").unwrap().state,
@@ -712,7 +790,7 @@ mod tests {
             exits_immediately: true,
             ..MockLauncher::default()
         });
-        let error = manager.start(spec()).unwrap_err();
+        let error = manager.start(spec(), None).unwrap_err();
         assert_eq!(error.code, "runtime_error");
         assert_eq!(
             manager.status("vm-test").unwrap().state,
@@ -727,8 +805,8 @@ mod tests {
             graceful_completes: true,
             ..MockLauncher::default()
         });
-        manager.start(spec()).unwrap();
-        let status = manager.stop("vm-test").unwrap();
+        manager.start(spec(), None).unwrap();
+        let status = manager.stop("vm-test", None).unwrap();
         assert_eq!(status.state, QemuProcessState::Stopped);
         assert_eq!(
             status.termination_reason,
@@ -743,12 +821,103 @@ mod tests {
             graceful_completes: false,
             ..MockLauncher::default()
         });
-        manager.start(spec()).unwrap();
-        let status = manager.stop("vm-test").unwrap();
+        manager.start(spec(), None).unwrap();
+        let status = manager.stop("vm-test", None).unwrap();
         assert_eq!(status.state, QemuProcessState::Stopped);
         assert_eq!(
             status.termination_reason,
             Some(QemuTerminationReason::Forced)
         );
+    }
+
+    #[test]
+    fn initial_process_state_is_not_started() {
+        let mut manager = QemuProcessManager::with_launcher(MockLauncher::default());
+        let status = manager.status("vm-test").unwrap();
+        assert_eq!(status.state, QemuProcessState::NotStarted);
+        assert_eq!(status.process_id, None);
+        assert_eq!(status.exit_code, None);
+        assert_eq!(status.termination_reason, None);
+    }
+
+    #[test]
+    fn process_start_transitions_through_starting_to_running() {
+        let mut manager = QemuProcessManager::with_launcher(MockLauncher::default());
+        let status = manager.start(spec(), None).unwrap();
+        assert_eq!(status.state, QemuProcessState::Running);
+        assert!(status.process_id.is_some());
+    }
+
+    #[test]
+    fn process_immediate_exit_with_zero_code_is_failed() {
+        let mut manager = QemuProcessManager::with_launcher(MockLauncher {
+            exits_immediately: true,
+            ..MockLauncher::default()
+        });
+        let result = manager.start(spec(), None);
+        assert!(result.is_err());
+        let status = manager.status("vm-test").unwrap();
+        assert_eq!(status.state, QemuProcessState::Failed);
+        assert_eq!(status.exit_code, Some(0));
+        assert_eq!(
+            status.termination_reason,
+            Some(QemuTerminationReason::UnexpectedExit)
+        );
+    }
+
+    #[test]
+    fn failed_launch_does_not_remain_in_running() {
+        let mut manager = QemuProcessManager::with_launcher(MockLauncher {
+            launch_fails: true,
+            ..MockLauncher::default()
+        });
+        let error = manager.start(spec(), None).unwrap_err();
+        assert_eq!(error.code, "runtime_error");
+        let status = manager.status("vm-test").unwrap();
+        assert!(matches!(
+            status.state,
+            QemuProcessState::NotStarted | QemuProcessState::Failed
+        ));
+    }
+
+    #[test]
+    fn event_payload_serializes() {
+        let event = VmProcessStatusEvent {
+            vm_id: "vm-test".to_string(),
+            status: QemuProcessStatus {
+                vm_id: "vm-test".to_string(),
+                state: QemuProcessState::Running,
+                process_id: Some(42),
+                exit_code: None,
+                termination_reason: None,
+                output: QemuProcessOutput::default(),
+            },
+        };
+        let serialized = serde_json::to_string(&event).unwrap();
+        assert!(serialized.contains("vmId"));
+        assert!(serialized.contains("running"));
+        let deserialized: VmProcessStatusEvent = serde_json::from_str(&serialized).unwrap();
+        assert_eq!(deserialized.vm_id, "vm-test");
+        assert_eq!(deserialized.status.state, QemuProcessState::Running);
+    }
+
+    #[test]
+    fn stop_cleanup_removes_process_entry() {
+        let mut manager = QemuProcessManager::with_launcher(MockLauncher::default());
+        manager.start(spec(), None).unwrap();
+        let stopped = manager.stop("vm-test", None).unwrap();
+        assert_eq!(stopped.state, QemuProcessState::Stopped);
+        assert_eq!(
+            manager.status("vm-test").unwrap().state,
+            QemuProcessState::Stopped
+        );
+    }
+
+    #[test]
+    fn duplicate_start_is_rejected() {
+        let mut manager = QemuProcessManager::with_launcher(MockLauncher::default());
+        manager.start(spec(), None).unwrap();
+        let error = manager.start(spec(), None).unwrap_err();
+        assert_eq!(error.code, "conflict");
     }
 }

@@ -115,6 +115,24 @@ export function VirtualMachinesPage() {
     void loadDiskStatusesForCurrentView();
   }, [definitions]);
 
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    const subscribe = async () => {
+      unlisten = await vmService.onVmProcessStatus((event) => {
+        setProcessStatuses((current) => ({
+          ...current,
+          [event.status.vmId]: event.status,
+        }));
+      });
+    };
+    void subscribe();
+    return () => {
+      if (unlisten) {
+        unlisten();
+      }
+    };
+  }, []);
+
   const openCreateForm = () => {
     setConfiguration({ ...defaultConfiguration });
     setEditingId(null);
